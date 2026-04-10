@@ -1,0 +1,28 @@
+services:
+  schichtplaner-web:
+    build: .
+    container_name: schichtplaner-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=schichtplaner;Username=schichtplaner;Password=SehrSicheresPasswort123
+      SeedAdmin__Email: admin@example.local
+      SeedAdmin__Password: Admin1234
+    depends_on:
+      - schichtplaner-db
+
+  schichtplaner-db:
+    image: postgres:16
+    container_name: schichtplaner-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: schichtplaner
+      POSTGRES_USER: schichtplaner
+      POSTGRES_PASSWORD: SehrSicheresPasswort123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
