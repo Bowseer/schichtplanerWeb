@@ -1,4 +1,21 @@
 services:
+  schichtplaner-db:
+    image: postgres:16
+    container_name: schichtplaner-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: schichtplaner
+      POSTGRES_USER: schichtplaner
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /mnt/Apps_Virtualization/compose/schichtplaner/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schichtplaner -d schichtplaner"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   schichtplaner-web:
     build: .
     container_name: schichtplaner-web
@@ -12,15 +29,5 @@ services:
       SeedAdmin__Email: ${ADMIN_EMAIL}
       SeedAdmin__Password: ${ADMIN_PASSWORD}
     depends_on:
-      - schichtplaner-db
-
-  schichtplaner-db:
-    image: postgres:16
-    container_name: schichtplaner-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: schichtplaner
-      POSTGRES_USER: schichtplaner
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - /mnt/Apps_Virtualization/compose/schichtplaner/postgres:/var/lib/postgresql/data
+      schichtplaner-db:
+        condition: service_healthy
