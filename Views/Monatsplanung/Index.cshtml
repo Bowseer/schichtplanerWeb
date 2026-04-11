@@ -1,60 +1,131 @@
 @model MonatsplanViewModel
 
+@{
+    ViewData["Title"] = "Monatsplanung";
+}
+
 <h2>Monatsplanung</h2>
 
-<form method="get">
-    <select name="standortId">
-        @foreach (var s in Model.Standorte)
-        {
-            <option value="@s.Id" selected="@(s.Id == Model.StandortId)">
-                @s.Name
-            </option>
-        }
-    </select>
+<form id="filterForm" method="get" class="planung-toolbar">
+    @Html.AntiForgeryToken()
 
-    <input type="number" name="jahr" value="@Model.Jahr" />
-    <input type="number" name="monat" value="@Model.Monat" min="1" max="12" />
+    <div class="toolbar-group">
+        <label for="standortId">Standort</label>
+        <select id="standortId" name="standortId">
+            @foreach (var s in Model.Standorte)
+            {
+                if (s.Id == Model.StandortId)
+                {
+                    <option value="@s.Id" selected>@s.Name</option>
+                }
+                else
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            }
+        </select>
+    </div>
 
-    <button type="submit">Laden</button>
+    <div class="toolbar-group">
+        <label for="jahr">Jahr</label>
+        <input id="jahr" type="number" name="jahr" value="@Model.Jahr" />
+    </div>
+
+    <div class="toolbar-group">
+        <label for="monat">Monat</label>
+        <input id="monat" type="number" name="monat" value="@Model.Monat" min="1" max="12" />
+    </div>
 </form>
 
 <div class="layout">
-
     <div class="sidebar">
+        <h3>Mitarbeiter</h3>
+
         @foreach (var m in Model.Mitarbeiter)
         {
-            <div class="mitarbeiter" style="background:@m.Farbe">
-                @m.Name<br />
-                Rest: @m.Reststunden h
+            <div class="mitarbeiter-card"
+                 draggable="true"
+                 data-mitarbeiter-id="@m.Id"
+                 data-mitarbeiter-name="@m.Name"
+                 data-color="@m.Farbe"
+                 style="border-left: 10px solid @m.Farbe;">
+                <div class="mitarbeiter-name">@m.Name</div>
+                <div class="mitarbeiter-rest">Rest: @m.Reststunden h</div>
             </div>
         }
     </div>
 
     <div class="kalender">
-
-        <div class="header">
-            <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+        <div class="kalender-header">
+            <div>Mo</div>
+            <div>Di</div>
+            <div>Mi</div>
+            <div>Do</div>
+            <div>Fr</div>
+            <div>Sa</div>
+            <div>So</div>
         </div>
 
-        @foreach (var w in Model.Wochen)
+        @foreach (var woche in Model.Wochen)
         {
-            <div class="woche">
-                @foreach (var t in w.Tage)
+            <div class="kalender-woche">
+                @foreach (var tag in woche.Tage)
                 {
-                    <div class="tag @(t.IstSonntag ? "sonntag" : "")">
-                        <div class="datum">@t.Datum.Day</div>
+                    var classes = "kalender-tag";
+                    if (tag.Datum.Month != Model.Monat)
+                    {
+                        classes += " anderer-monat";
+                    }
+                    if (tag.IstSonntag)
+                    {
+                        classes += " sonntag";
+                    }
+                    if (tag.IstFeiertag)
+                    {
+                        classes += " feiertag";
+                    }
 
-                        @foreach (var s in t.Slots)
-                        {
-                            <div class="slot" style="background:@s.Farbe">
-                                @s.MitarbeiterName
-                            </div>
-                        }
+                    <div class="@classes">
+                        <div class="tag-kopf">
+                            <span class="tag-datum">@tag.Datum.ToString("dd.MM")</span>
+                            @if (tag.IstFeiertag && !string.IsNullOrWhiteSpace(tag.FeiertagName))
+                            {
+                                <span class="tag-feiertag">@tag.FeiertagName</span>
+                            }
+                        </div>
+
+                        <div class="tag-slots">
+                            @foreach (var slot in tag.Slots)
+                            {
+                                <div class="slot-dropzone"
+                                     data-standort-id="@Model.StandortId"
+                                     data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                     data-slot="@slot.Slot">
+                                    <div class="slot-label">Slot @slot.Slot</div>
+
+                                    @if (!string.IsNullOrWhiteSpace(slot.MitarbeiterName))
+                                    {
+                                        <div class="slot-belegung"
+                                             style="background:@slot.Farbe;">
+                                            @slot.MitarbeiterName
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="slot-leer">frei</div>
+                                    }
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
             </div>
         }
-
     </div>
-
 </div>
+
+<div id="planungStatus" class="planung-status" hidden></div>
+
+@section Scripts {
+    <script src="~/js/monatsplanung.js" asp-append-version="true"></script>
+}

@@ -39,3 +39,164 @@ body { background-color: #f8f9fa; }
     padding: 2px;
     font-size: 12px;
 }
+
+.planung-toolbar {
+    display: flex;
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+}
+
+.sidebar {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    height: fit-content;
+}
+
+.mitarbeiter-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: grab;
+    user-select: none;
+}
+
+.mitarbeiter-name {
+    font-weight: 600;
+}
+
+.mitarbeiter-rest {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.kalender {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kalender-header,
+.kalender-woche {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.kalender-header > div {
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 0;
+}
+
+.kalender-tag {
+    border: 1px solid #d7d7d7;
+    border-radius: 8px;
+    min-height: 180px;
+    background: white;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kalender-tag.anderer-monat {
+    opacity: 0.45;
+}
+
+.kalender-tag.sonntag {
+    background: #fff1f1;
+}
+
+.kalender-tag.feiertag {
+    border-color: #cc4b4b;
+}
+
+.tag-kopf {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: start;
+}
+
+.tag-datum {
+    font-weight: 700;
+}
+
+.tag-feiertag {
+    font-size: 0.75rem;
+    color: #b02a37;
+    text-align: right;
+}
+
+.tag-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slot-dropzone {
+    border: 1px dashed #b9b9b9;
+    border-radius: 6px;
+    padding: 6px;
+    min-height: 42px;
+    background: #fafafa;
+}
+
+.slot-dropzone.dragover {
+    border-color: #0d6efd;
+    background: #eaf2ff;
+}
+
+.slot-label {
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.slot-belegung {
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 0.9rem;
+    color: #222;
+}
+
+.slot-leer {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.planung-status {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: white;
+    z-index: 9999;
+}
+
+.planung-status.success {
+    background: #198754;
+}
+
+.planung-status.error {
+    background: #dc3545;
+}

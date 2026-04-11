@@ -45,6 +45,7 @@ public class KalenderTagDto
 public class KalenderSlotDto
 {
     public int Slot { get; set; }
+    public int? MitarbeiterId { get; set; }
     public string? MitarbeiterName { get; set; }
     public string? Farbe { get; set; }
 }
