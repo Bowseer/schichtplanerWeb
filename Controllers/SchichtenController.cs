@@ -33,7 +33,7 @@ public class SchichtenController : Controller
     {
         var vm = new SchichtCreateViewModel
         {
-            Datum = DateTime.Today,
+            Datum = DateOnly.FromDateTime(DateTime.Today),
             Beginn = new TimeSpan(9, 0, 0),
             Ende = new TimeSpan(17, 0, 0)
         };
