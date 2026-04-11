@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Schichtplaner")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+63abd9d68d2726c077b96327b6b978d5560b811c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fa5e4ddc6411e15148d5c0697888a8535e3828a1")]
 [assembly: System.Reflection.AssemblyProductAttribute("Schichtplaner")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Schichtplaner")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
