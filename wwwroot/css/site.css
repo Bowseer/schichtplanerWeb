@@ -250,6 +250,7 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 6px;
+    cursor: grab;
 }
 
 .compact-slot-belegung {

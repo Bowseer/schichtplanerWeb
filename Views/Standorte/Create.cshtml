@@ -1,10 +1,35 @@
 @model Standort
-@{ ViewData["Title"] = "Standort anlegen"; }
+@{
+    ViewData["Title"] = "Standort anlegen";
+}
+
 <h1>Standort anlegen</h1>
+
 <form asp-action="Create" method="post">
-<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-<div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
-<div class="mb-3"><label asp-for="Adresse" class="form-label"></label><input asp-for="Adresse" class="form-control" /><span asp-validation-for="Adresse" class="text-danger"></span></div>
-<button type="submit" class="btn btn-primary">Speichern</button> <a asp-action="Index" class="btn btn-secondary">Abbrechen</a>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Adresse" class="form-label"></label>
+        <input asp-for="Adresse" class="form-control" />
+        <span asp-validation-for="Adresse" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Bundesland" class="form-label"></label>
+        <select asp-for="Bundesland" asp-items="Html.GetEnumSelectList<Bundesland>()" class="form-select"></select>
+        <span asp-validation-for="Bundesland" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Speichern</button>
+    <a asp-action="Index" class="btn btn-secondary">Abbrechen</a>
 </form>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

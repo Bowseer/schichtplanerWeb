@@ -62,6 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const belegung = document.createElement("div");
         belegung.className = "slot-belegung compact-slot-belegung";
         belegung.style.background = slotData.farbe ?? "";
+        belegung.draggable = true;
+        belegung.dataset.mitarbeiterId = slotData.mitarbeiterId;
+        belegung.dataset.mitarbeiterName = slotData.mitarbeiterName;
+        belegung.dataset.color = slotData.farbe ?? "";
+        belegung.dataset.sourceStandortId = slotData.standortId;
+        belegung.dataset.sourceDatum = slotData.datum;
+        belegung.dataset.sourceSlot = slotData.slot;
 
         const name = document.createElement("span");
         name.className = "slot-belegung-name";
@@ -80,7 +87,73 @@ document.addEventListener("DOMContentLoaded", () => {
         belegung.appendChild(removeButton);
         zone.appendChild(belegung);
 
+        bindAssignedDrag(belegung);
         bindRemoveButton(removeButton);
+    };
+
+    const saveDrop = async (payload) => {
+        const response = await fetch("/Monatsplanung/AssignSlot", {
+            method: "POST",
+            headers: antiforgery(),
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return { response, data };
+    };
+
+    const removeSlot = async (payload) => {
+        const response = await fetch("/Monatsplanung/RemoveSlot", {
+            method: "POST",
+            headers: antiforgery(),
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return { response, data };
+    };
+
+    const handleAssign = async (request) => {
+        let result = await saveDrop(request);
+
+        if (!result.response.ok && result.data?.requiresConfirmation) {
+            const confirmed = window.confirm(
+                `${result.data.message}\n\nTrotzdem einplanen?`
+            );
+
+            if (!confirmed) {
+                return null;
+            }
+
+            request.forceMaxHoursOverride = true;
+            result = await saveDrop(request);
+        }
+
+        if (!result.response.ok || !result.data.success) {
+            showStatus(result.data?.message || "Speichern fehlgeschlagen.", true);
+            return null;
+        }
+
+        updateSlotDom(result.data.slot);
+        updateEmployeeRest(result.data.employeeRest);
+        return result.data;
+    };
+
+    const bindAssignedDrag = (element) => {
+        element.addEventListener("dragstart", (event) => {
+            const payload = {
+                type: "assigned",
+                mitarbeiterId: element.dataset.mitarbeiterId,
+                mitarbeiterName: element.dataset.mitarbeiterName,
+                color: element.dataset.color,
+                sourceStandortId: element.dataset.sourceStandortId,
+                sourceDatum: element.dataset.sourceDatum,
+                sourceSlot: element.dataset.sourceSlot
+            };
+
+            event.dataTransfer.setData("application/json", JSON.stringify(payload));
+            event.dataTransfer.effectAllowed = "move";
+        });
     };
 
     if (standort) standort.addEventListener("change", submitFilter);
@@ -90,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".mitarbeiter-card").forEach((item) => {
         item.addEventListener("dragstart", (event) => {
             const payload = {
+                type: "sidebar",
                 mitarbeiterId: item.dataset.mitarbeiterId,
                 mitarbeiterName: item.dataset.mitarbeiterName,
                 color: item.dataset.color
@@ -99,6 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
             event.dataTransfer.effectAllowed = "move";
         });
     });
+
+    document.querySelectorAll(".slot-belegung").forEach(bindAssignedDrag);
 
     document.querySelectorAll(".slot-dropzone").forEach((zone) => {
         zone.addEventListener("dragover", (event) => {
@@ -119,51 +195,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const dragged = JSON.parse(raw);
 
-            const request = {
-                standortId: Number(zone.dataset.standortId),
-                mitarbeiterId: Number(dragged.mitarbeiterId),
-                datum: zone.dataset.datum,
-                slot: Number(zone.dataset.slot),
-                forceMaxHoursOverride: false
-            };
+            const targetStandortId = Number(zone.dataset.standortId);
+            const targetDatum = zone.dataset.datum;
+            const targetSlot = Number(zone.dataset.slot);
 
-            const saveDrop = async (payload) => {
-                const response = await fetch("/Monatsplanung/AssignSlot", {
-                    method: "POST",
-                    headers: antiforgery(),
-                    body: JSON.stringify(payload)
-                });
+            if (dragged.type === "assigned") {
+                const sameTarget =
+                    Number(dragged.sourceStandortId) === targetStandortId &&
+                    dragged.sourceDatum === targetDatum &&
+                    Number(dragged.sourceSlot) === targetSlot;
 
-                const data = await response.json();
-                return { response, data };
-            };
-
-            try {
-                let result = await saveDrop(request);
-
-                if (!result.response.ok && result.data?.requiresConfirmation) {
-                    const confirmed = window.confirm(
-                        `${result.data.message}\n\nTrotzdem einplanen?`
-                    );
-
-                    if (!confirmed) {
-                        return;
-                    }
-
-                    request.forceMaxHoursOverride = true;
-                    result = await saveDrop(request);
-                }
-
-                if (!result.response.ok || !result.data.success) {
-                    showStatus(result.data?.message || "Speichern fehlgeschlagen.", true);
+                if (sameTarget) {
                     return;
                 }
 
-                updateSlotDom(result.data.slot);
-                updateEmployeeRest(result.data.employeeRest);
+                const assignRequest = {
+                    standortId: targetStandortId,
+                    mitarbeiterId: Number(dragged.mitarbeiterId),
+                    datum: targetDatum,
+                    slot: targetSlot,
+                    forceMaxHoursOverride: false
+                };
+
+                const assignData = await handleAssign(assignRequest);
+                if (!assignData) {
+                    return;
+                }
+
+                const removeResult = await removeSlot({
+                    standortId: Number(dragged.sourceStandortId),
+                    datum: dragged.sourceDatum,
+                    slot: Number(dragged.sourceSlot)
+                });
+
+                if (!removeResult.response.ok || !removeResult.data.success) {
+                    showStatus(removeResult.data?.message || "Verschieben teilweise fehlgeschlagen.", true);
+                    return;
+                }
+
+                updateSlotDom(removeResult.data.slot);
+                updateEmployeeRest(removeResult.data.employeeRest);
+                showStatus("Belegung verschoben.");
+                return;
+            }
+
+            const request = {
+                standortId: targetStandortId,
+                mitarbeiterId: Number(dragged.mitarbeiterId),
+                datum: targetDatum,
+                slot: targetSlot,
+                forceMaxHoursOverride: false
+            };
+
+            const result = await handleAssign(request);
+            if (result) {
                 showStatus("Belegung gespeichert.");
-            } catch {
-                showStatus("Speichern fehlgeschlagen.", true);
             }
         });
     });
@@ -250,7 +336,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const bindRemoveButton = (button) => {
-        button.addEventListener("click", async () => {
+        button.addEventListener("click", async (event) => {
+            event.stopPropagation();
+
             const request = {
                 standortId: Number(button.dataset.standortId),
                 datum: button.dataset.datum,

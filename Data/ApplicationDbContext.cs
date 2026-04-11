@@ -82,5 +82,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Standort>()
             .Property(s => s.SpaetEnde)
             .HasConversion(v => v, v => v);
+
+        builder.Entity<Standort>()
+            .Property(s => s.Bundesland)
+            .HasConversion<int>();
     }
 }
