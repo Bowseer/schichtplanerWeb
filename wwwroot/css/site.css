@@ -1,3 +1,41 @@
 body { background-color: #f8f9fa; }
 .card { border: 0; }
 .table td, .table th { vertical-align: middle; }
+
+.layout {
+    display: flex;
+}
+
+.sidebar {
+    width: 200px;
+}
+
+.mitarbeiter {
+    margin: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.kalender {
+    flex: 1;
+}
+
+.header, .woche {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.tag {
+    border: 1px solid #ccc;
+    min-height: 120px;
+}
+
+.sonntag {
+    background: #ffe0e0;
+}
+
+.slot {
+    margin: 2px;
+    padding: 2px;
+    font-size: 12px;
+}

@@ -73,6 +73,10 @@ if (app.Configuration.GetValue<bool>("UseHttpsRedirection"))
 {
     app.UseHttpsRedirection();
 }
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Monatsplanung}/{action=Index}/{id?}");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();

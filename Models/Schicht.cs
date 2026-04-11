@@ -28,6 +28,8 @@ public class Schicht
     [Range(0, 600)]
     public int PauseMinuten { get; set; }
 
+    public int Slot { get; set; } // 1-3
+
     [NotMapped]
     public decimal Stunden
     {
