@@ -22,8 +22,10 @@ public class MonatsplanungController : Controller
         var targetYear = jahr ?? today.Year;
         var targetMonth = monat ?? today.Month;
 
-        var start = new DateOnly(targetYear, targetMonth, 1);
+        var start = new DateOnly(jahr, monat, 1);
         var end = start.AddMonths(1);
+
+        
 
         var mitarbeiter = await _db.Mitarbeiter
             .Include(m => m.Standort)
