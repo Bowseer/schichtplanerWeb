@@ -56,7 +56,7 @@ public class SchichtenController : Controller
         {
             MitarbeiterId = vm.MitarbeiterId,
             StandortId = vm.StandortId,
-            Datum = vm.Datum.Date,
+            Datum = vm.Datum,
             Beginn = vm.Beginn,
             Ende = vm.Ende,
             PauseMinuten = vm.PauseMinuten
@@ -113,7 +113,7 @@ public class SchichtenController : Controller
 
         entity.MitarbeiterId = vm.MitarbeiterId;
         entity.StandortId = vm.StandortId;
-        entity.Datum = vm.Datum.Date;
+        entity.Datum = vm.Datum;
         entity.Beginn = vm.Beginn;
         entity.Ende = vm.Ende;
         entity.PauseMinuten = vm.PauseMinuten;

@@ -15,8 +15,9 @@ public class Schicht
     public int StandortId { get; set; }
     public Standort? Standort { get; set; }
 
+    [Required]
     [DataType(DataType.Date)]
-    public DateTime Datum { get; set; }
+    public DateOnly Datum { get; set; }
 
     [Required]
     public TimeSpan Beginn { get; set; }

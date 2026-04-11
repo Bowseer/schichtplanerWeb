@@ -18,11 +18,11 @@ public class MonatsplanungController : Controller
 
     public async Task<IActionResult> Index(int? jahr, int? monat)
     {
-        var today = DateTime.Today;
+        var today = DateOnly.FromDateTime(DateTime.Today);
         var targetYear = jahr ?? today.Year;
         var targetMonth = monat ?? today.Month;
 
-        var start = new DateTime(targetYear, targetMonth, 1);
+        var start = new DateOnly(targetYear, targetMonth, 1);
         var end = start.AddMonths(1);
 
         var mitarbeiter = await _db.Mitarbeiter

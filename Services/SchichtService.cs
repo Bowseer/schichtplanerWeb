@@ -34,9 +34,10 @@ public class SchichtService : ISchichtService
             return (false, "Mitarbeiter ist inaktiv.");
         }
 
-        var schichtDatum = schicht.Datum.Date;
+        var schichtDatum = schicht.Datum;
 
-        if (mitarbeiter.NurSamstag && schichtDatum.DayOfWeek != DayOfWeek.Saturday)
+        if (mitarbeiter.NurSamstag &&
+            schichtDatum.ToDateTime(TimeOnly.MinValue).DayOfWeek != DayOfWeek.Saturday)
         {
             return (false, "Dieser Mitarbeiter darf nur samstags arbeiten.");
         }
@@ -79,7 +80,7 @@ public class SchichtService : ISchichtService
 
     public async Task<decimal> GetMonatsstundenAsync(int mitarbeiterId, int jahr, int monat, int? excludeSchichtId = null)
     {
-        var monthStart = new DateTime(jahr, monat, 1);
+        var monthStart = new DateOnly(jahr, monat, 1);
         var monthEnd = monthStart.AddMonths(1);
 
         var query = _db.Schichten.Where(s =>
