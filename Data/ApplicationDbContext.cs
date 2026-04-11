@@ -20,6 +20,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<ApplicationUser>()
+            .HasOne(u => u.DefaultStandort)
+            .WithMany()
+            .HasForeignKey(u => u.DefaultStandortId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Standort>()
+            .Property(s => s.Bundesland)
+            .HasConversion<int>();
+
         builder.Entity<Schicht>()
             .Property(s => s.Datum)
             .HasColumnType("date");
@@ -82,9 +92,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Standort>()
             .Property(s => s.SpaetEnde)
             .HasConversion(v => v, v => v);
-
-        builder.Entity<Standort>()
-            .Property(s => s.Bundesland)
-            .HasConversion<int>();
     }
 }

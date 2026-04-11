@@ -1,30 +1,41 @@
 @model IEnumerable<Schicht>
+
 @{
     ViewData["Title"] = "Schichten";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Schichten</h1>
-    <a asp-action="Create" class="btn btn-primary">Neu</a>
 </div>
 
 <form method="get" class="row g-3 mb-3">
-    <div class="col-md-4">
+
+    <div class="col-md-3">
         <label class="form-label">Mitarbeiter</label>
         <select name="mitarbeiterId" asp-items="ViewBag.MitarbeiterId" class="form-select">
             <option value="">Alle</option>
         </select>
     </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Standort</label>
+        <select name="standortId" asp-items="ViewBag.StandortId" class="form-select">
+            <option value="">Alle</option>
+        </select>
+    </div>
+
     <div class="col-md-2">
         <label class="form-label">Jahr</label>
         <input type="number" name="jahr" value="@ViewBag.Jahr" class="form-control" />
     </div>
+
     <div class="col-md-2">
         <label class="form-label">Monat</label>
         <input type="number" name="monat" value="@ViewBag.Monat" min="1" max="12" class="form-control" />
     </div>
-    <div class="col-md-2 align-self-end">
-        <button type="submit" class="btn btn-primary">Filtern</button>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filtern</button>
     </div>
 </form>
 
@@ -37,35 +48,26 @@
             <th>Standort</th>
             <th>Beginn</th>
             <th>Ende</th>
-            <th>Pause</th>
             <th>Stunden</th>
-            <th></th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model)
+        @foreach (var s in Model)
         {
             <tr>
-                <td>@item.Datum.ToString("dd.MM.yyyy")</td>
+                <td>@s.Datum.ToString("dd.MM.yyyy")</td>
                 <td>
-                    @(item.Slot switch
-                    {
-                        1 => "Früh",
-                        2 => "Flex",
-                        3 => "Spät",
-                        _ => "-"
-                    })
+                    @(
+                        s.Slot == 1 ? "Früh" :
+                        s.Slot == 2 ? "Flex" :
+                        s.Slot == 3 ? "Spät" : "?"
+                    )
                 </td>
-                <td>@item.Mitarbeiter?.VollerName</td>
-                <td>@item.Standort?.Name</td>
-                <td>@item.Beginn</td>
-                <td>@item.Ende</td>
-                <td>@item.PauseMinuten min</td>
-                <td>@item.Stunden</td>
-                <td class="text-end">
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-secondary">Bearbeiten</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Löschen</a>
-                </td>
+                <td>@s.Mitarbeiter?.VollerName</td>
+                <td>@s.Standort?.Name</td>
+                <td>@s.Beginn.ToString(@"hh\:mm")</td>
+                <td>@s.Ende.ToString(@"hh\:mm")</td>
+                <td>@s.Stunden</td>
             </tr>
         }
     </tbody>

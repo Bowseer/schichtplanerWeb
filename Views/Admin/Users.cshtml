@@ -1,0 +1,130 @@
+@model Schichtplaner.Models.ViewModels.AdminUserManagementViewModel
+
+@{
+    ViewData["Title"] = "Usermanagement";
+}
+
+<h1>Usermanagement</h1>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h3>Neuen User anlegen</h3>
+
+        <form asp-action="CreateUser" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">E-Mail</label>
+                    <input asp-for="CreateUser.Email" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Anzeigename</label>
+                    <input asp-for="CreateUser.DisplayName" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Initialpasswort</label>
+                    <input asp-for="CreateUser.InitialPassword" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Standardstandort</label>
+                    <select asp-for="CreateUser.DefaultStandortId" asp-items="Model.Standorte" class="form-select">
+                        <option value="">Keiner</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input asp-for="CreateUser.IsAdmin" class="form-check-input" />
+                        <label asp-for="CreateUser.IsAdmin" class="form-check-label">Admin</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary mt-4">Anlegen</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>E-Mail</th>
+            <th>Name</th>
+            <th>Admin</th>
+            <th>Aktiv</th>
+            <th>Resetpflicht</th>
+            <th>Standardstandort</th>
+            <th>Passwort</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.DisplayName</td>
+                <td>@(user.IsAdmin ? "Ja" : "Nein")</td>
+                <td>@(!user.IsDisabled ? "Ja" : "Nein")</td>
+                <td>@(user.MustChangePassword ? "Ja" : "Nein")</td>
+                <td>
+                    <form asp-action="SetDefaultStandort" method="post" class="d-flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <select name="defaultStandortId" class="form-select form-select-sm">
+                            <option value="">Keiner</option>
+                            @foreach (var s in Model.Standorte)
+                            {
+                                if (user.DefaultStandortId?.ToString() == s.Value)
+                                {
+                                    <option value="@s.Value" selected>@s.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@s.Value">@s.Text</option>
+                                }
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-secondary">Speichern</button>
+                    </form>
+                </td>
+                <td>
+                    <form asp-action="ResetPassword" method="post" class="d-flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ResetPassword.UserId" value="@user.Id" />
+                        <input name="ResetPassword.NewPassword" class="form-control form-control-sm" placeholder="Neues Passwort" />
+                        <button type="submit" class="btn btn-sm btn-warning">Reset</button>
+                    </form>
+                </td>
+                <td class="d-flex gap-2">
+                    <form asp-action="ToggleAdmin" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            @(user.IsAdmin ? "Admin entfernen" : "Zum Admin machen")
+                        </button>
+                    </form>
+
+                    <form asp-action="ToggleDisabled" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <button type="submit" class="btn btn-sm @(user.IsDisabled ? "btn-success" : "btn-danger")">
+                            @(user.IsDisabled ? "Aktivieren" : "Deaktivieren")
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Schichtplaner.Data;
@@ -15,15 +17,18 @@ public class MonatsplanungController : Controller
     private readonly ApplicationDbContext _db;
     private readonly ISchichtService _schichtService;
     private readonly IFeiertagService _feiertagService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public MonatsplanungController(
         ApplicationDbContext db,
         ISchichtService schichtService,
-        IFeiertagService feiertagService)
+        IFeiertagService feiertagService,
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _schichtService = schichtService;
         _feiertagService = feiertagService;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index(int? jahr, int? monat, int? standortId)
@@ -40,7 +45,12 @@ public class MonatsplanungController : Controller
             .OrderBy(s => s.Name)
             .ToListAsync();
 
-        var selectedStandort = standortId ?? standorte.FirstOrDefault()?.Id;
+        var user = await _userManager.GetUserAsync(User);
+
+        var selectedStandort = standortId
+            ?? user?.DefaultStandortId
+            ?? standorte.FirstOrDefault()?.Id;
+
         if (selectedStandort == null)
         {
             return View(new MonatsplanViewModel
@@ -73,128 +83,17 @@ public class MonatsplanungController : Controller
 
         var feiertage = _feiertagService.GetFeiertage(targetYear, standort.Bundesland);
 
-        var model = new MonatsplanViewModel
-        {
-            Jahr = targetYear,
-            Monat = targetMonth,
-            StandortId = selectedStandort,
-            Standorte = standorte.Select(s => new StandortDto
-            {
-                Id = s.Id,
-                Name = s.Name
-            }).ToList(),
-            Mitarbeiter = mitarbeiter.Select(m =>
-            {
-                var geplant = m.Schichten.Sum(s => s.Stunden);
-
-                return new MitarbeiterSidebarDto
-                {
-                    Id = m.Id,
-                    Name = m.VollerName,
-                    Reststunden = m.MaxStundenProMonat - geplant,
-                    Farbe = colorMap[m.Id]
-                };
-            }).ToList(),
-            StandardSlotZeiten = new List<StandardSlotZeitDto>
-            {
-                new()
-                {
-                    Slot = 1,
-                    SlotName = "Früh",
-                    Beginn = standort.FruehBeginn.ToString(@"hh\:mm"),
-                    Ende = standort.FruehEnde.ToString(@"hh\:mm")
-                },
-                new()
-                {
-                    Slot = 2,
-                    SlotName = "Flex",
-                    Beginn = standort.TagBeginn.ToString(@"hh\:mm"),
-                    Ende = standort.TagEnde.ToString(@"hh\:mm")
-                },
-                new()
-                {
-                    Slot = 3,
-                    SlotName = "Spät",
-                    Beginn = standort.SpaetBeginn.ToString(@"hh\:mm"),
-                    Ende = standort.SpaetEnde.ToString(@"hh\:mm")
-                }
-            }
-        };
-
-        var schichtenLookup = mitarbeiter
-            .SelectMany(m => m.Schichten.Select(s => new
-            {
-                MitarbeiterId = m.Id,
-                MitarbeiterName = m.VollerName,
-                Schicht = s
-            }))
-            .ToList();
-
-        var firstDayOfWeek = (int)start.DayOfWeek;
-        if (firstDayOfWeek == 0)
-        {
-            firstDayOfWeek = 7;
-        }
-
-        var kalenderStart = start.AddDays(-(firstDayOfWeek - 1));
-        var wochen = new List<KalenderWocheDto>();
-
-        for (int wocheIndex = 0; wocheIndex < 6; wocheIndex++)
-        {
-            var weekStart = kalenderStart.AddDays(wocheIndex * 7);
-            var weekDates = Enumerable.Range(0, 7).Select(offset => weekStart.AddDays(offset)).ToList();
-
-            if (weekDates.All(d => d.Month != targetMonth))
-            {
-                continue;
-            }
-
-            var woche = new KalenderWocheDto
-            {
-                KalenderWoche = ISOWeek.GetWeekOfYear(weekStart.ToDateTime(TimeOnly.MinValue))
-            };
-
-            foreach (var currentDate in weekDates)
-            {
-                feiertage.TryGetValue(currentDate, out var feiertagName);
-
-                var tag = new KalenderTagDto
-                {
-                    Datum = currentDate,
-                    IstSonntag = currentDate.DayOfWeek == DayOfWeek.Sunday,
-                    IstFeiertag = feiertagName != null,
-                    FeiertagName = feiertagName
-                };
-
-                for (int slot = 1; slot <= 3; slot++)
-                {
-                    var belegung = schichtenLookup.FirstOrDefault(x =>
-                        x.Schicht.Datum == currentDate &&
-                        x.Schicht.Slot == slot);
-
-                    var slotZeit = GetSlotZeitForDate(standort, slotOverrides, currentDate, slot);
-
-                    tag.Slots.Add(new KalenderSlotDto
-                    {
-                        Slot = slot,
-                        SlotName = GetSlotName(slot),
-                        Beginn = slotZeit.Beginn.ToString(@"hh\:mm"),
-                        Ende = slotZeit.Ende.ToString(@"hh\:mm"),
-                        MitarbeiterId = belegung?.MitarbeiterId,
-                        MitarbeiterName = belegung?.MitarbeiterName,
-                        Farbe = belegung != null
-                            ? colorMap[belegung.MitarbeiterId]
-                            : null
-                    });
-                }
-
-                woche.Tage.Add(tag);
-            }
-
-            wochen.Add(woche);
-        }
-
-        model.Wochen = wochen;
+        var model = new MonatsPlanViewModelBuilder()
+            .Build(
+                targetYear,
+                targetMonth,
+                selectedStandort,
+                standorte,
+                standort,
+                mitarbeiter,
+                slotOverrides,
+                feiertage,
+                colorMap);
 
         return View(model);
     }
@@ -534,17 +433,6 @@ public class MonatsplanungController : Controller
         return GetColorForIndex(index);
     }
 
-    private static string GetSlotName(int slot)
-    {
-        return slot switch
-        {
-            1 => "Früh",
-            2 => "Flex",
-            3 => "Spät",
-            _ => $"Slot {slot}"
-        };
-    }
-
     private static (TimeSpan Beginn, TimeSpan Ende) GetSlotZeitForDate(
         Standort standort,
         List<TagesSlotZeit> overrides,
@@ -596,6 +484,187 @@ public class MonatsplanungController : Controller
     {
         double hue = (index * 137.508) % 360;
         return $"hsl({hue:F0}, 70%, 75%)";
+    }
+}
+
+internal sealed class MonatsPlanViewModelBuilder
+{
+    public MonatsplanViewModel Build(
+        int targetYear,
+        int targetMonth,
+        int? selectedStandort,
+        List<Standort> standorte,
+        Standort standort,
+        List<Mitarbeiter> mitarbeiter,
+        List<TagesSlotZeit> slotOverrides,
+        Dictionary<DateOnly, string> feiertage,
+        Dictionary<int, string> colorMap)
+    {
+        var start = new DateOnly(targetYear, targetMonth, 1);
+        var end = start.AddMonths(1);
+
+        var model = new MonatsplanViewModel
+        {
+            Jahr = targetYear,
+            Monat = targetMonth,
+            StandortId = selectedStandort,
+            Standorte = standorte.Select(s => new StandortDto
+            {
+                Id = s.Id,
+                Name = s.Name
+            }).ToList(),
+            Mitarbeiter = mitarbeiter.Select(m =>
+            {
+                var geplant = m.Schichten.Sum(s => s.Stunden);
+
+                return new MitarbeiterSidebarDto
+                {
+                    Id = m.Id,
+                    Name = m.VollerName,
+                    Reststunden = m.MaxStundenProMonat - geplant,
+                    Farbe = colorMap[m.Id]
+                };
+            }).ToList(),
+            StandardSlotZeiten = new List<StandardSlotZeitDto>
+            {
+                new()
+                {
+                    Slot = 1,
+                    SlotName = "Früh",
+                    Beginn = standort.FruehBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.FruehEnde.ToString(@"hh\:mm")
+                },
+                new()
+                {
+                    Slot = 2,
+                    SlotName = "Flex",
+                    Beginn = standort.TagBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.TagEnde.ToString(@"hh\:mm")
+                },
+                new()
+                {
+                    Slot = 3,
+                    SlotName = "Spät",
+                    Beginn = standort.SpaetBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.SpaetEnde.ToString(@"hh\:mm")
+                }
+            },
+            FeiertageImMonat = feiertage
+                .Where(f => f.Key >= start && f.Key < end)
+                .OrderBy(f => f.Key)
+                .Select(f => new FeiertagListeDto
+                {
+                    Datum = f.Key.ToString("dd.MM.yyyy"),
+                    Name = f.Value
+                })
+                .ToList()
+        };
+
+        var schichtenLookup = mitarbeiter
+            .SelectMany(m => m.Schichten.Select(s => new
+            {
+                MitarbeiterId = m.Id,
+                MitarbeiterName = m.VollerName,
+                Schicht = s
+            }))
+            .ToList();
+
+        var firstDayOfWeek = (int)start.DayOfWeek;
+        if (firstDayOfWeek == 0)
+        {
+            firstDayOfWeek = 7;
+        }
+
+        var kalenderStart = start.AddDays(-(firstDayOfWeek - 1));
+        var wochen = new List<KalenderWocheDto>();
+
+        for (int wocheIndex = 0; wocheIndex < 6; wocheIndex++)
+        {
+            var weekStart = kalenderStart.AddDays(wocheIndex * 7);
+            var weekDates = Enumerable.Range(0, 7).Select(offset => weekStart.AddDays(offset)).ToList();
+
+            if (weekDates.All(d => d.Month != targetMonth))
+            {
+                continue;
+            }
+
+            var woche = new KalenderWocheDto
+            {
+                KalenderWoche = ISOWeek.GetWeekOfYear(weekStart.ToDateTime(TimeOnly.MinValue))
+            };
+
+            foreach (var currentDate in weekDates)
+            {
+                feiertage.TryGetValue(currentDate, out var feiertagName);
+
+                var tag = new KalenderTagDto
+                {
+                    Datum = currentDate,
+                    IstSonntag = currentDate.DayOfWeek == DayOfWeek.Sunday,
+                    IstFeiertag = feiertagName != null,
+                    FeiertagName = feiertagName
+                };
+
+                for (int slot = 1; slot <= 3; slot++)
+                {
+                    var belegung = schichtenLookup.FirstOrDefault(x =>
+                        x.Schicht.Datum == currentDate &&
+                        x.Schicht.Slot == slot);
+
+                    var slotZeit = GetSlotZeitForDate(standort, slotOverrides, currentDate, slot);
+
+                    tag.Slots.Add(new KalenderSlotDto
+                    {
+                        Slot = slot,
+                        SlotName = GetSlotName(slot),
+                        Beginn = slotZeit.Beginn.ToString(@"hh\:mm"),
+                        Ende = slotZeit.Ende.ToString(@"hh\:mm"),
+                        MitarbeiterId = belegung?.MitarbeiterId,
+                        MitarbeiterName = belegung?.MitarbeiterName,
+                        Farbe = belegung != null ? colorMap[belegung.MitarbeiterId] : null
+                    });
+                }
+
+                woche.Tage.Add(tag);
+            }
+
+            wochen.Add(woche);
+        }
+
+        model.Wochen = wochen;
+        return model;
+    }
+
+    private static string GetSlotName(int slot)
+    {
+        return slot switch
+        {
+            1 => "Früh",
+            2 => "Flex",
+            3 => "Spät",
+            _ => $"Slot {slot}"
+        };
+    }
+
+    private static (TimeSpan Beginn, TimeSpan Ende) GetSlotZeitForDate(
+        Standort standort,
+        List<TagesSlotZeit> overrides,
+        DateOnly datum,
+        int slot)
+    {
+        var overrideZeit = overrides.FirstOrDefault(t => t.Datum == datum && t.Slot == slot);
+        if (overrideZeit != null)
+        {
+            return (overrideZeit.Beginn, overrideZeit.Ende);
+        }
+
+        return slot switch
+        {
+            1 => (standort.FruehBeginn, standort.FruehEnde),
+            2 => (standort.TagBeginn, standort.TagEnde),
+            3 => (standort.SpaetBeginn, standort.SpaetEnde),
+            _ => throw new ArgumentOutOfRangeException(nameof(slot))
+        };
     }
 }
 

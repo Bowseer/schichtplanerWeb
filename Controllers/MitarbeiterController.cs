@@ -17,10 +17,28 @@ public class MitarbeiterController : Controller
         _db = db;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int? standortId)
     {
-        var mitarbeiter = await _db.Mitarbeiter.Include(m => m.Standort)
-            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname).ToListAsync();
+        var query = _db.Mitarbeiter
+            .Include(m => m.Standort)
+            .AsQueryable();
+
+        if (standortId.HasValue)
+        {
+            query = query.Where(m => m.StandortId == standortId.Value);
+        }
+
+        var mitarbeiter = await query
+            .OrderBy(m => m.Nachname)
+            .ThenBy(m => m.Vorname)
+            .ToListAsync();
+
+        ViewBag.StandortFilter = new SelectList(
+            await _db.Standorte.OrderBy(s => s.Name).ToListAsync(),
+            "Id",
+            "Name",
+            standortId);
+
         return View(mitarbeiter);
     }
 
@@ -28,7 +46,7 @@ public class MitarbeiterController : Controller
     public async Task<IActionResult> Create()
     {
         await LoadStandorteAsync();
-        return View(new Mitarbeiter { Aktiv = true });
+        return View(new Mitarbeiter());
     }
 
     [HttpPost]
@@ -63,6 +81,7 @@ public class MitarbeiterController : Controller
     public async Task<IActionResult> Edit(int id, Mitarbeiter model)
     {
         if (id != model.Id) return NotFound();
+
         if (!ModelState.IsValid)
         {
             await LoadStandorteAsync(model.StandortId);
@@ -78,7 +97,8 @@ public class MitarbeiterController : Controller
     public async Task<IActionResult> Delete(int id)
     {
         var model = await _db.Mitarbeiter.Include(m => m.Standort).FirstOrDefaultAsync(m => m.Id == id);
-        return model == null ? NotFound() : View(model);
+        if (model == null) return NotFound();
+        return View(model);
     }
 
     [HttpPost, ActionName("Delete")]

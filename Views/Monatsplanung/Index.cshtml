@@ -11,20 +11,6 @@
 <form id="filterForm" method="get" class="planung-toolbar">
     @Html.AntiForgeryToken()
 
-    <div class="monat-navigation">
-        <a class="btn btn-sm btn-outline-secondary"
-           asp-action="Index"
-           asp-route-jahr="@prev.Year"
-           asp-route-monat="@prev.Month"
-           asp-route-standortId="@Model.StandortId">← Vorheriger Monat</a>
-
-        <a class="btn btn-sm btn-outline-secondary"
-           asp-action="Index"
-           asp-route-jahr="@next.Year"
-           asp-route-monat="@next.Month"
-           asp-route-standortId="@Model.StandortId">Nächster Monat →</a>
-    </div>
-
     <div class="toolbar-group">
         <label for="standortId">Standort</label>
         <select id="standortId" name="standortId">
@@ -53,31 +39,6 @@
     </div>
 </form>
 
-<div class="standard-slot-leiste">
-    @foreach (var standard in Model.StandardSlotZeiten)
-    {
-        <div class="standard-slot-card">
-            <div class="standard-slot-title">@standard.SlotName</div>
-            <input type="time"
-                   class="standard-slot-beginn"
-                   data-slot="@standard.Slot"
-                   value="@standard.Beginn" />
-            <span>–</span>
-            <input type="time"
-                   class="standard-slot-ende"
-                   data-slot="@standard.Slot"
-                   value="@standard.Ende" />
-            <button type="button"
-                    class="save-standard-slot-time"
-                    data-standort-id="@Model.StandortId"
-                    data-slot="@standard.Slot"
-                    title="Standard speichern">
-                💾
-            </button>
-        </div>
-    }
-</div>
-
 <div class="layout compact-layout">
     <div class="sidebar">
         <h3>Mitarbeiter</h3>
@@ -94,142 +55,192 @@
                 <div class="mitarbeiter-rest" id="employee-rest-@m.Id">Rest: @m.Reststunden h</div>
             </div>
         }
+
+        @if (Model.FeiertageImMonat.Any())
+        {
+            <div class="feiertag-panel">
+                <h4>Feiertage</h4>
+                <ul class="feiertag-liste">
+                    @foreach (var feiertag in Model.FeiertageImMonat)
+                    {
+                        <li><strong>@feiertag.Datum</strong> – @feiertag.Name</li>
+                    }
+                </ul>
+            </div>
+        }
     </div>
 
-    <div class="kalender">
-        <div class="kalender-header compact-header">
-            <div>Mo</div>
-            <div>Di</div>
-            <div>Mi</div>
-            <div>Do</div>
-            <div>Fr</div>
-            <div>Sa</div>
-            <div>So</div>
+    <div class="kalender-bereich">
+        <div class="monat-navigation kalender-navigation">
+            <a class="btn btn-sm btn-outline-secondary"
+               asp-action="Index"
+               asp-route-jahr="@prev.Year"
+               asp-route-monat="@prev.Month"
+               asp-route-standortId="@Model.StandortId">← Vorheriger Monat</a>
+
+            <a class="btn btn-sm btn-outline-secondary"
+               asp-action="Index"
+               asp-route-jahr="@next.Year"
+               asp-route-monat="@next.Month"
+               asp-route-standortId="@Model.StandortId">Nächster Monat →</a>
         </div>
 
-        @foreach (var woche in Model.Wochen)
-        {
-            <div class="kalender-woche-row">
-                <div class="kw-box">
-                    KW<br />@woche.KalenderWoche
+        <div class="standard-slot-leiste">
+            @foreach (var standard in Model.StandardSlotZeiten)
+            {
+                <div class="standard-slot-card">
+                    <div class="standard-slot-title">@standard.SlotName</div>
+                    <input type="time"
+                           class="standard-slot-beginn"
+                           data-slot="@standard.Slot"
+                           value="@standard.Beginn" />
+                    <span>–</span>
+                    <input type="time"
+                           class="standard-slot-ende"
+                           data-slot="@standard.Slot"
+                           value="@standard.Ende" />
+                    <button type="button"
+                            class="save-standard-slot-time"
+                            data-standort-id="@Model.StandortId"
+                            data-slot="@standard.Slot"
+                            title="Standard speichern">
+                        💾
+                    </button>
                 </div>
+            }
+        </div>
 
-                <div class="kalender-woche compact-week">
-                    @foreach (var tag in woche.Tage)
-                    {
-                        var classes = "kalender-tag compact-tag";
-                        if (tag.Datum.Month != Model.Monat)
-                        {
-                            classes += " anderer-monat";
-                        }
-                        if (tag.IstSonntag)
-                        {
-                            classes += " sonntag";
-                        }
-                        if (tag.IstFeiertag)
-                        {
-                            classes += " feiertag";
-                        }
+        <div class="kalender">
+            <div class="kalender-header compact-header">
+                <div>Mo</div>
+                <div>Di</div>
+                <div>Mi</div>
+                <div>Do</div>
+                <div>Fr</div>
+                <div>Sa</div>
+                <div>So</div>
+            </div>
 
-                        <div class="@classes">
-                            <div class="tag-kopf compact-tag-kopf">
-                                <div>
-                                    <span class="tag-datum">@tag.Datum.ToString("dd.MM")</span>
-                                    @if (tag.IstFeiertag && !string.IsNullOrWhiteSpace(tag.FeiertagName))
+            @foreach (var woche in Model.Wochen)
+            {
+                <div class="kalender-woche-row">
+                    <div class="kw-box">
+                        KW<br />@woche.KalenderWoche
+                    </div>
+
+                    <div class="kalender-woche compact-week">
+                        @foreach (var tag in woche.Tage)
+                        {
+                            var classes = "kalender-tag compact-tag";
+                            if (tag.Datum.Month != Model.Monat)
+                            {
+                                classes += " anderer-monat";
+                            }
+                            if (tag.IstSonntag)
+                            {
+                                classes += " sonntag";
+                            }
+                            if (tag.IstFeiertag)
+                            {
+                                classes += " feiertag";
+                            }
+
+                            <div class="@classes">
+                                <div class="tag-kopf compact-tag-kopf">
+                                    <div>
+                                        <span class="tag-datum">@tag.Datum.ToString("dd.MM")</span>
+                                    </div>
+
+                                    <div class="tag-actions">
+                                        <button type="button"
+                                                class="show-flex-slot icon-button"
+                                                data-target="flex-slot-@tag.Datum.ToString("yyyyMMdd")"
+                                                title="Flex anzeigen">
+                                            +
+                                        </button>
+
+                                        <button type="button"
+                                                class="day-edit-toggle icon-button"
+                                                data-target="day-edit-@tag.Datum.ToString("yyyyMMdd")"
+                                                title="Tageszeiten bearbeiten">
+                                            ✎
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="day-edit-@tag.Datum.ToString("yyyyMMdd")"
+                                     class="day-edit-panel"
+                                     hidden>
+                                    @foreach (var slot in tag.Slots)
                                     {
-                                        <span class="tag-feiertag">@tag.FeiertagName</span>
+                                        <div class="day-edit-slot-row">
+                                            <div class="day-edit-slot-name">@slot.SlotName</div>
+                                            <input type="time"
+                                                   class="day-slot-beginn"
+                                                   data-slot="@slot.Slot"
+                                                   value="@slot.Beginn" />
+                                            <input type="time"
+                                                   class="day-slot-ende"
+                                                   data-slot="@slot.Slot"
+                                                   value="@slot.Ende" />
+                                            <button type="button"
+                                                    class="save-day-slot-time icon-button"
+                                                    data-standort-id="@Model.StandortId"
+                                                    data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                                    data-slot="@slot.Slot"
+                                                    title="Tag speichern">
+                                                💾
+                                            </button>
+                                        </div>
                                     }
                                 </div>
 
-                                <div class="tag-actions">
-                                    <button type="button"
-                                            class="show-flex-slot icon-button"
-                                            data-target="flex-slot-@tag.Datum.ToString("yyyyMMdd")"
-                                            title="Flex anzeigen">
-                                        +
-                                    </button>
+                                <div class="tag-slots compact-slots">
+                                    @foreach (var slot in tag.Slots)
+                                    {
+                                        var hideFlex = slot.Slot == 2 && string.IsNullOrWhiteSpace(slot.MitarbeiterName);
 
-                                    <button type="button"
-                                            class="day-edit-toggle icon-button"
-                                            data-target="day-edit-@tag.Datum.ToString("yyyyMMdd")"
-                                            title="Tageszeiten bearbeiten">
-                                        ✎
-                                    </button>
+                                        <div id="@(slot.Slot == 2 ? $"flex-slot-{tag.Datum:yyyyMMdd}" : null)"
+                                             class="slot-dropzone compact-slot @(hideFlex ? "slot-hidden" : "")"
+                                             data-standort-id="@Model.StandortId"
+                                             data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                             data-slot="@slot.Slot">
+                                            <div class="slot-header compact-slot-header">
+                                                <div class="slot-label">@slot.SlotName</div>
+                                                <div class="slot-zeit">@slot.Beginn - @slot.Ende</div>
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(slot.MitarbeiterName))
+                                            {
+                                                <div class="slot-belegung compact-slot-belegung"
+                                                     style="background:@slot.Farbe;"
+                                                     draggable="true"
+                                                     data-mitarbeiter-id="@slot.MitarbeiterId"
+                                                     data-mitarbeiter-name="@slot.MitarbeiterName"
+                                                     data-color="@slot.Farbe"
+                                                     data-source-standort-id="@Model.StandortId"
+                                                     data-source-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                                     data-source-slot="@slot.Slot">
+                                                    <span class="slot-belegung-name">@slot.MitarbeiterName</span>
+                                                    <button type="button"
+                                                            class="remove-slot icon-button"
+                                                            data-standort-id="@Model.StandortId"
+                                                            data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                                            data-slot="@slot.Slot"
+                                                            title="Belegung entfernen">
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                             </div>
-
-                            <div id="day-edit-@tag.Datum.ToString("yyyyMMdd")"
-                                 class="day-edit-panel"
-                                 hidden>
-                                @foreach (var slot in tag.Slots)
-                                {
-                                    <div class="day-edit-slot-row">
-                                        <div class="day-edit-slot-name">@slot.SlotName</div>
-                                        <input type="time"
-                                               class="day-slot-beginn"
-                                               data-slot="@slot.Slot"
-                                               value="@slot.Beginn" />
-                                        <input type="time"
-                                               class="day-slot-ende"
-                                               data-slot="@slot.Slot"
-                                               value="@slot.Ende" />
-                                        <button type="button"
-                                                class="save-day-slot-time icon-button"
-                                                data-standort-id="@Model.StandortId"
-                                                data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
-                                                data-slot="@slot.Slot"
-                                                title="Tag speichern">
-                                            💾
-                                        </button>
-                                    </div>
-                                }
-                            </div>
-
-                            <div class="tag-slots compact-slots">
-                                @foreach (var slot in tag.Slots)
-                                {
-                                    var hideFlex = slot.Slot == 2 && string.IsNullOrWhiteSpace(slot.MitarbeiterName);
-
-                                    <div id="@(slot.Slot == 2 ? $"flex-slot-{tag.Datum:yyyyMMdd}" : null)"
-                                         class="slot-dropzone compact-slot @(hideFlex ? "slot-hidden" : "")"
-                                         data-standort-id="@Model.StandortId"
-                                         data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
-                                         data-slot="@slot.Slot">
-                                        <div class="slot-header compact-slot-header">
-                                            <div class="slot-label">@slot.SlotName</div>
-                                            <div class="slot-zeit">@slot.Beginn - @slot.Ende</div>
-                                        </div>
-
-                                        @if (!string.IsNullOrWhiteSpace(slot.MitarbeiterName))
-                                        {
-                                            <div class="slot-belegung compact-slot-belegung"
-                                                 style="background:@slot.Farbe;"
-                                                 draggable="true"
-                                                 data-mitarbeiter-id="@slot.MitarbeiterId"
-                                                 data-mitarbeiter-name="@slot.MitarbeiterName"
-                                                 data-color="@slot.Farbe"
-                                                 data-source-standort-id="@Model.StandortId"
-                                                 data-source-datum="@tag.Datum.ToString("yyyy-MM-dd")"
-                                                 data-source-slot="@slot.Slot">
-                                                <span class="slot-belegung-name">@slot.MitarbeiterName</span>
-                                                <button type="button"
-                                                        class="remove-slot icon-button"
-                                                        data-standort-id="@Model.StandortId"
-                                                        data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
-                                                        data-slot="@slot.Slot"
-                                                        title="Belegung entfernen">
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
 </div>
 

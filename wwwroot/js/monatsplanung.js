@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+ï»¿document.addEventListener("DOMContentLoaded", () => {
     const filterForm = document.getElementById("filterForm");
     const standort = document.getElementById("standortId");
     const jahr = document.getElementById("jahr");
@@ -97,7 +97,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (Number(slotData.slot) === 2) {
             zone.classList.add("slot-hidden");
+            const dayCard = zone.closest(".kalender-tag");
+            const toggle = dayCard?.querySelector(`.show-flex-slot[data-target="flex-slot-${slotData.datum.replaceAll("-", "")}"]`);
+            if (toggle) {
+                toggle.textContent = "+";
+                toggle.setAttribute("title", "Flex anzeigen");
+            }
         }
+    };
+
+    const updateFlexToggleForZone = (zone, visible) => {
+        if (!zone) return;
+
+        const dayCard = zone.closest(".kalender-tag");
+        const datum = zone.dataset.datum?.replaceAll("-", "");
+        const toggle = dayCard?.querySelector(`.show-flex-slot[data-target="flex-slot-${datum}"]`);
+
+        if (!toggle) return;
+
+        toggle.textContent = visible ? "âˆ’" : "+";
+        toggle.setAttribute("title", visible ? "Flex ausblenden" : "Flex anzeigen");
     };
 
     const updateSlotDom = (slotData) => {
@@ -114,6 +133,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         zone.classList.remove("slot-hidden");
+
+        if (Number(slotData.slot) === 2) {
+            updateFlexToggleForZone(zone, true);
+        }
 
         const belegung = document.createElement("div");
         belegung.className = "slot-belegung compact-slot-belegung";
@@ -213,7 +236,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const targetId = button.dataset.target;
             const slot = document.getElementById(targetId);
             if (!slot) return;
-            slot.classList.remove("slot-hidden");
+
+            const hasBelegung = !!slot.querySelector(".slot-belegung");
+            const currentlyHidden = slot.classList.contains("slot-hidden");
+
+            if (currentlyHidden) {
+                slot.classList.remove("slot-hidden");
+                button.textContent = "âˆ’";
+                button.setAttribute("title", "Flex ausblenden");
+                return;
+            }
+
+            if (!hasBelegung) {
+                slot.classList.add("slot-hidden");
+                button.textContent = "+";
+                button.setAttribute("title", "Flex anzeigen");
+            }
         });
     });
 
@@ -313,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     undoState = null;
-                    showStatus("Verschiebung rückgängig gemacht.");
+                    showStatus("Verschiebung rÃ¼ckgÃ¤ngig gemacht.");
                 });
 
                 return;
@@ -470,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
 
                         undoState = null;
-                        showStatus("Entfernen rückgängig gemacht.");
+                        showStatus("Entfernen rÃ¼ckgÃ¤ngig gemacht.");
                     });
                 } else {
                     showStatus("Belegung entfernt.");

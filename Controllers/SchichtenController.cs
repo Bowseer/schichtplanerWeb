@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Schichtplaner.Data;
 using Schichtplaner.Models;
-using Schichtplaner.Models.ViewModels;
 using Schichtplaner.Services;
 
 namespace Schichtplaner.Controllers;
@@ -21,7 +20,7 @@ public class SchichtenController : Controller
         _schichtService = schichtService;
     }
 
-    public async Task<IActionResult> Index(int? mitarbeiterId, int? jahr, int? monat)
+    public async Task<IActionResult> Index(int? mitarbeiterId, int? standortId, int? jahr, int? monat)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var selectedYear = jahr ?? today.Year;
@@ -41,8 +40,13 @@ public class SchichtenController : Controller
             query = query.Where(s => s.MitarbeiterId == mitarbeiterId.Value);
         }
 
+        if (standortId.HasValue)
+        {
+            query = query.Where(s => s.StandortId == standortId.Value);
+        }
+
         var schichten = await query
-            .OrderByDescending(s => s.Datum)
+            .OrderBy(s => s.Datum)
             .ThenBy(s => s.Slot)
             .ThenBy(s => s.Beginn)
             .ToListAsync();
@@ -56,200 +60,28 @@ public class SchichtenController : Controller
             "VollerName",
             mitarbeiterId);
 
+        ViewBag.StandortId = new SelectList(
+            await _db.Standorte
+                .OrderBy(s => s.Name)
+                .ToListAsync(),
+            "Id",
+            "Name",
+            standortId);
+
         ViewBag.Jahr = selectedYear;
         ViewBag.Monat = selectedMonth;
 
         return View(schichten);
     }
 
-    [Authorize(Roles = "Admin,Planer")]
-    public async Task<IActionResult> Create()
+    private string GetSlotName(int slot)
     {
-        var vm = new SchichtCreateViewModel
+        return slot switch
         {
-            Datum = DateOnly.FromDateTime(DateTime.Today),
-            Beginn = new TimeSpan(9, 0, 0),
-            Ende = new TimeSpan(17, 0, 0)
+            1 => "Früh",
+            2 => "Flex",
+            3 => "Spät",
+            _ => "?"
         };
-
-        await LoadListsAsync(vm);
-        return View(vm);
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin,Planer")]
-    public async Task<IActionResult> Create(SchichtCreateViewModel vm)
-    {
-        if (!ModelState.IsValid)
-        {
-            await LoadListsAsync(vm);
-            return View(vm);
-        }
-
-        var entity = new Schicht
-        {
-            MitarbeiterId = vm.MitarbeiterId,
-            StandortId = vm.StandortId,
-            Datum = vm.Datum,
-            Beginn = vm.Beginn,
-            Ende = vm.Ende,
-            PauseMinuten = vm.PauseMinuten
-        };
-
-        var validation = await _schichtService.ValidateSchichtAsync(entity);
-        if (!validation.Success)
-        {
-            ModelState.AddModelError(string.Empty, validation.Message);
-            await LoadListsAsync(vm);
-            return View(vm);
-        }
-
-        _db.Schichten.Add(entity);
-        await _db.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
-    }
-
-    [Authorize(Roles = "Admin,Planer")]
-    public async Task<IActionResult> Edit(int id)
-    {
-        var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null)
-        {
-            return NotFound();
-        }
-
-        var vm = new SchichtEditViewModel
-        {
-            Id = entity.Id,
-            MitarbeiterId = entity.MitarbeiterId,
-            StandortId = entity.StandortId,
-            Datum = entity.Datum,
-            Beginn = entity.Beginn,
-            Ende = entity.Ende,
-            PauseMinuten = entity.PauseMinuten
-        };
-
-        await LoadListsAsync(vm);
-        return View(vm);
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin,Planer")]
-    public async Task<IActionResult> Edit(int id, SchichtEditViewModel vm)
-    {
-        if (id != vm.Id)
-        {
-            return NotFound();
-        }
-
-        if (!ModelState.IsValid)
-        {
-            await LoadListsAsync(vm);
-            return View(vm);
-        }
-
-        var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null)
-        {
-            return NotFound();
-        }
-
-        entity.MitarbeiterId = vm.MitarbeiterId;
-        entity.StandortId = vm.StandortId;
-        entity.Datum = vm.Datum;
-        entity.Beginn = vm.Beginn;
-        entity.Ende = vm.Ende;
-        entity.PauseMinuten = vm.PauseMinuten;
-
-        var validation = await _schichtService.ValidateSchichtAsync(entity, entity.Id);
-        if (!validation.Success)
-        {
-            ModelState.AddModelError(string.Empty, validation.Message);
-            await LoadListsAsync(vm);
-            return View(vm);
-        }
-
-        await _db.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
-    }
-
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var entity = await _db.Schichten
-            .Include(s => s.Mitarbeiter)
-            .Include(s => s.Standort)
-            .FirstOrDefaultAsync(s => s.Id == id);
-
-        if (entity == null)
-        {
-            return NotFound();
-        }
-
-        return View(entity);
-    }
-
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null)
-        {
-            return NotFound();
-        }
-
-        _db.Schichten.Remove(entity);
-        await _db.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
-    }
-
-    private async Task LoadListsAsync(SchichtCreateViewModel vm)
-    {
-        vm.MitarbeiterListe = await _db.Mitarbeiter
-            .Where(m => m.Aktiv)
-            .OrderBy(m => m.Nachname)
-            .ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem
-            {
-                Value = m.Id.ToString(),
-                Text = m.VollerName
-            })
-            .ToListAsync();
-
-        vm.StandortListe = await _db.Standorte
-            .OrderBy(s => s.Name)
-            .Select(s => new SelectListItem
-            {
-                Value = s.Id.ToString(),
-                Text = s.Name
-            })
-            .ToListAsync();
-    }
-
-    private async Task LoadListsAsync(SchichtEditViewModel vm)
-    {
-        vm.MitarbeiterListe = await _db.Mitarbeiter
-            .Where(m => m.Aktiv)
-            .OrderBy(m => m.Nachname)
-            .ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem
-            {
-                Value = m.Id.ToString(),
-                Text = m.VollerName
-            })
-            .ToListAsync();
-
-        vm.StandortListe = await _db.Standorte
-            .OrderBy(s => s.Name)
-            .Select(s => new SelectListItem
-            {
-                Value = s.Id.ToString(),
-                Text = s.Name
-            })
-            .ToListAsync();
     }
 }

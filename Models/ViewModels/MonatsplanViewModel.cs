@@ -10,6 +10,7 @@ public class MonatsplanViewModel
 
     public List<MitarbeiterSidebarDto> Mitarbeiter { get; set; } = new();
     public List<StandardSlotZeitDto> StandardSlotZeiten { get; set; } = new();
+    public List<FeiertagListeDto> FeiertageImMonat { get; set; } = new();
 
     public List<KalenderWocheDto> Wochen { get; set; } = new();
 }
@@ -34,6 +35,12 @@ public class StandardSlotZeitDto
     public string SlotName { get; set; } = string.Empty;
     public string Beginn { get; set; } = string.Empty;
     public string Ende { get; set; } = string.Empty;
+}
+
+public class FeiertagListeDto
+{
+    public string Datum { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 }
 
 public class KalenderWocheDto

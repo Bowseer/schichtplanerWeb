@@ -25,6 +25,10 @@ body {
     align-items: end;
 }
 
+.kalender-navigation {
+    margin-bottom: 12px;
+}
+
 .toolbar-group {
     display: flex;
     flex-direction: column;
@@ -75,12 +79,34 @@ body {
     gap: 10px;
 }
 
+.kalender-bereich {
+    min-width: 0;
+}
+
 .sidebar {
     background: #f8f9fa;
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 10px;
     height: fit-content;
+}
+
+.feiertag-panel {
+    margin-top: 16px;
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+}
+
+.feiertag-panel h4 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: #b02a37;
+}
+
+.feiertag-liste {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.85rem;
 }
 
 .mitarbeiter-card {
@@ -195,12 +221,6 @@ body {
 .tag-datum {
     font-weight: 700;
     font-size: 0.85rem;
-}
-
-.tag-feiertag {
-    font-size: 0.68rem;
-    color: #b02a37;
-    margin-left: 4px;
 }
 
 .day-edit-panel {
