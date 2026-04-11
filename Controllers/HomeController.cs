@@ -18,8 +18,8 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var now = DateTime.Today;
-        var monthStart = new DateTime(now.Year, now.Month, 1).Date;
+        var now = DateOnly.FromDateTime(DateTime.Today);
+        var monthStart = new DateOnly(now.Year, now.Month, 1);
         var monthEnd = monthStart.AddMonths(1);
 
         var model = new DashboardViewModel
@@ -29,10 +29,14 @@ public class HomeController : Controller
             AnzahlSchichtenDiesenMonat = await _db.Schichten.CountAsync(s => s.Datum >= monthStart && s.Datum < monthEnd)
         };
 
-        var mitarbeiter = await _db.Mitarbeiter.Include(m => m.Schichten).ToListAsync();
+        var mitarbeiter = await _db.Mitarbeiter
+            .Include(m => m.Schichten.Where(s => s.Datum >= monthStart && s.Datum < monthEnd))
+            .ToListAsync();
+
         foreach (var m in mitarbeiter)
         {
-            var stunden = m.Schichten.Where(s => s.Datum >= monthStart && s.Datum < monthEnd).Sum(s => s.Stunden);
+            var stunden = m.Schichten.Sum(s => s.Stunden);
+
             if (stunden > m.MaxStundenProMonat)
             {
                 model.Warnungen.Add($"{m.VollerName}: {stunden:F2} h geplant, erlaubt {m.MaxStundenProMonat:F2} h");
@@ -42,6 +46,8 @@ public class HomeController : Controller
         return View(model);
     }
 
-    [AllowAnonymous]
-    public IActionResult Error() => View();
+    public IActionResult Error()
+    {
+        return View();
+    }
 }

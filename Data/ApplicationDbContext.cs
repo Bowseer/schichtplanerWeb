@@ -6,7 +6,8 @@ namespace Schichtplaner.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
     }
 
@@ -17,6 +18,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<Schicht>()
+            .Property(s => s.Datum)
+            .HasColumnType("date");
 
         builder.Entity<Standort>()
             .HasMany(s => s.Mitarbeiter)
@@ -35,9 +40,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithOne(s => s.Mitarbeiter)
             .HasForeignKey(s => s.MitarbeiterId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<Schicht>()
-            .Property(s => s.Datum)
-            .HasColumnType("date");
     }
 }

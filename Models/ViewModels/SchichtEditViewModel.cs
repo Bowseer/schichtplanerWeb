@@ -15,7 +15,7 @@ public class SchichtEditViewModel
 
     [Required]
     [DataType(DataType.Date)]
-    public DateTime Datum { get; set; }
+    public DateOnly Datum { get; set; }
 
     [Required]
     public TimeSpan Beginn { get; set; }
