@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Schichtplaner.Data;
@@ -140,12 +141,21 @@ public class MonatsplanungController : Controller
 
         for (int wocheIndex = 0; wocheIndex < 6; wocheIndex++)
         {
-            var woche = new KalenderWocheDto();
+            var weekStart = kalenderStart.AddDays(wocheIndex * 7);
+            var weekDates = Enumerable.Range(0, 7).Select(offset => weekStart.AddDays(offset)).ToList();
 
-            for (int tagIndex = 0; tagIndex < 7; tagIndex++)
+            if (weekDates.All(d => d.Month != targetMonth))
             {
-                var currentDate = kalenderStart.AddDays(wocheIndex * 7 + tagIndex);
+                continue;
+            }
 
+            var woche = new KalenderWocheDto
+            {
+                KalenderWoche = ISOWeek.GetWeekOfYear(weekStart.ToDateTime(TimeOnly.MinValue))
+            };
+
+            foreach (var currentDate in weekDates)
+            {
                 feiertage.TryGetValue(currentDate, out var feiertagName);
 
                 var tag = new KalenderTagDto
@@ -240,6 +250,26 @@ public class MonatsplanungController : Controller
                 s.Slot == request.Slot);
 
         int? oldMitarbeiterId = bestehendeSlotSchicht?.MitarbeiterId;
+        Schicht? oldSourceSchicht = null;
+
+        if (request.SourceStandortId.HasValue &&
+            !string.IsNullOrWhiteSpace(request.SourceDatum) &&
+            request.SourceSlot.HasValue &&
+            DateOnly.TryParse(request.SourceDatum, out var sourceDatum))
+        {
+            oldSourceSchicht = await _db.Schichten.FirstOrDefaultAsync(s =>
+                s.StandortId == request.SourceStandortId.Value &&
+                s.Datum == sourceDatum &&
+                s.Slot == request.SourceSlot.Value);
+
+            if (oldSourceSchicht != null &&
+                (oldSourceSchicht.StandortId != request.StandortId ||
+                 oldSourceSchicht.Datum != datum ||
+                 oldSourceSchicht.Slot != request.Slot))
+            {
+                _db.Schichten.Remove(oldSourceSchicht);
+            }
+        }
 
         if (bestehendeSlotSchicht == null)
         {
@@ -313,6 +343,10 @@ public class MonatsplanungController : Controller
         {
             changedEmployeeIds.Add(oldMitarbeiterId.Value);
         }
+        if (oldSourceSchicht != null && oldSourceSchicht.MitarbeiterId != request.MitarbeiterId)
+        {
+            changedEmployeeIds.Add(oldSourceSchicht.MitarbeiterId);
+        }
 
         var employeeRest = await BuildEmployeeRestMap(request.StandortId, datum.Year, datum.Month, changedEmployeeIds);
 
@@ -328,6 +362,14 @@ public class MonatsplanungController : Controller
                 mitarbeiterName = mitarbeiter.VollerName,
                 farbe = await GetEmployeeColor(request.StandortId, request.MitarbeiterId)
             },
+            removedSource = oldSourceSchicht != null
+                ? new
+                {
+                    standortId = oldSourceSchicht.StandortId,
+                    datum = oldSourceSchicht.Datum.ToString("yyyy-MM-dd"),
+                    slot = oldSourceSchicht.Slot
+                }
+                : null,
             employeeRest
         });
     }
@@ -564,6 +606,9 @@ public class AssignSlotRequest
     public string Datum { get; set; } = string.Empty;
     public int Slot { get; set; }
     public bool ForceMaxHoursOverride { get; set; }
+    public int? SourceStandortId { get; set; }
+    public string? SourceDatum { get; set; }
+    public int? SourceSlot { get; set; }
 }
 
 public class RemoveSlotRequest

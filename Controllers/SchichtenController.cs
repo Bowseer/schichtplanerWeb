@@ -21,14 +21,43 @@ public class SchichtenController : Controller
         _schichtService = schichtService;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int? mitarbeiterId, int? jahr, int? monat)
     {
-        var schichten = await _db.Schichten
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var selectedYear = jahr ?? today.Year;
+        var selectedMonth = monat ?? today.Month;
+
+        var start = new DateOnly(selectedYear, selectedMonth, 1);
+        var end = start.AddMonths(1);
+
+        var query = _db.Schichten
             .Include(s => s.Mitarbeiter)
             .Include(s => s.Standort)
+            .Where(s => s.Datum >= start && s.Datum < end)
+            .AsQueryable();
+
+        if (mitarbeiterId.HasValue)
+        {
+            query = query.Where(s => s.MitarbeiterId == mitarbeiterId.Value);
+        }
+
+        var schichten = await query
             .OrderByDescending(s => s.Datum)
+            .ThenBy(s => s.Slot)
             .ThenBy(s => s.Beginn)
             .ToListAsync();
+
+        ViewBag.MitarbeiterId = new SelectList(
+            await _db.Mitarbeiter
+                .OrderBy(m => m.Nachname)
+                .ThenBy(m => m.Vorname)
+                .ToListAsync(),
+            "Id",
+            "VollerName",
+            mitarbeiterId);
+
+        ViewBag.Jahr = selectedYear;
+        ViewBag.Monat = selectedMonth;
 
         return View(schichten);
     }

@@ -38,6 +38,7 @@ public class StandardSlotZeitDto
 
 public class KalenderWocheDto
 {
+    public int KalenderWoche { get; set; }
     public List<KalenderTagDto> Tage { get; set; } = new();
 }
 

@@ -6,17 +6,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
     const statusBox = document.getElementById("planungStatus");
 
+    let undoState = null;
+    let undoTimer = null;
+
     const showStatus = (message, isError = false) => {
         if (!statusBox) return;
 
         statusBox.hidden = false;
-        statusBox.textContent = message;
+        statusBox.innerHTML = "";
         statusBox.classList.toggle("error", isError);
         statusBox.classList.toggle("success", !isError);
 
-        window.setTimeout(() => {
-            statusBox.hidden = true;
-        }, 3000);
+        if (typeof message === "string") {
+            statusBox.textContent = message;
+        } else {
+            statusBox.appendChild(message);
+        }
+
+        if (undoTimer) {
+            clearTimeout(undoTimer);
+            undoTimer = null;
+        }
+
+        if (!isError) {
+            undoTimer = window.setTimeout(() => {
+                statusBox.hidden = true;
+                undoState = null;
+            }, 5000);
+        }
+    };
+
+    const showUndoStatus = (text, onUndo) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "undo-wrapper";
+
+        const span = document.createElement("span");
+        span.textContent = text;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "undo-button";
+        button.textContent = "Undo";
+        button.addEventListener("click", async () => {
+            if (undoTimer) {
+                clearTimeout(undoTimer);
+                undoTimer = null;
+            }
+            await onUndo();
+        });
+
+        wrapper.appendChild(span);
+        wrapper.appendChild(button);
+
+        showStatus(wrapper, false);
     };
 
     const submitFilter = () => {
@@ -41,9 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    const updateSlotDom = (slotData) => {
-        if (!slotData) return;
-
+    const clearSlotDom = (slotData) => {
         const zone = document.querySelector(
             `.slot-dropzone[data-standort-id="${slotData.standortId}"][data-datum="${slotData.datum}"][data-slot="${slotData.slot}"]`
         );
@@ -54,10 +94,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (existing) {
             existing.remove();
         }
+    };
+
+    const updateSlotDom = (slotData) => {
+        if (!slotData) return;
+
+        clearSlotDom(slotData);
 
         if (!slotData.mitarbeiterName) {
             return;
         }
+
+        const zone = document.querySelector(
+            `.slot-dropzone[data-standort-id="${slotData.standortId}"][data-datum="${slotData.datum}"][data-slot="${slotData.slot}"]`
+        );
+
+        if (!zone) return;
 
         const belegung = document.createElement("div");
         belegung.className = "slot-belegung compact-slot-belegung";
@@ -135,6 +187,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         updateSlotDom(result.data.slot);
+        if (result.data.removedSource) {
+            clearSlotDom(result.data.removedSource);
+        }
         updateEmployeeRest(result.data.employeeRest);
         return result.data;
     };
@@ -214,7 +269,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     mitarbeiterId: Number(dragged.mitarbeiterId),
                     datum: targetDatum,
                     slot: targetSlot,
-                    forceMaxHoursOverride: false
+                    forceMaxHoursOverride: false,
+                    sourceStandortId: Number(dragged.sourceStandortId),
+                    sourceDatum: dragged.sourceDatum,
+                    sourceSlot: Number(dragged.sourceSlot)
                 };
 
                 const assignData = await handleAssign(assignRequest);
@@ -222,20 +280,40 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                const removeResult = await removeSlot({
-                    standortId: Number(dragged.sourceStandortId),
-                    datum: dragged.sourceDatum,
-                    slot: Number(dragged.sourceSlot)
+                undoState = {
+                    type: "move",
+                    current: {
+                        standortId: targetStandortId,
+                        datum: targetDatum,
+                        slot: targetSlot,
+                        mitarbeiterId: Number(dragged.mitarbeiterId)
+                    },
+                    previous: {
+                        standortId: Number(dragged.sourceStandortId),
+                        datum: dragged.sourceDatum,
+                        slot: Number(dragged.sourceSlot),
+                        mitarbeiterId: Number(dragged.mitarbeiterId)
+                    }
+                };
+
+                showUndoStatus("Belegung verschoben.", async () => {
+                    if (!undoState) return;
+
+                    await handleAssign({
+                        standortId: undoState.previous.standortId,
+                        mitarbeiterId: undoState.previous.mitarbeiterId,
+                        datum: undoState.previous.datum,
+                        slot: undoState.previous.slot,
+                        forceMaxHoursOverride: true,
+                        sourceStandortId: undoState.current.standortId,
+                        sourceDatum: undoState.current.datum,
+                        sourceSlot: undoState.current.slot
+                    });
+
+                    undoState = null;
+                    showStatus("Verschiebung rückgängig gemacht.");
                 });
 
-                if (!removeResult.response.ok || !removeResult.data.success) {
-                    showStatus(removeResult.data?.message || "Verschieben teilweise fehlgeschlagen.", true);
-                    return;
-                }
-
-                updateSlotDom(removeResult.data.slot);
-                updateEmployeeRest(removeResult.data.employeeRest);
-                showStatus("Belegung verschoben.");
                 return;
             }
 
@@ -339,6 +417,11 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", async (event) => {
             event.stopPropagation();
 
+            const slotElement = button.closest(".slot-belegung");
+            const removedMitarbeiterId = slotElement?.dataset.mitarbeiterId
+                ? Number(slotElement.dataset.mitarbeiterId)
+                : null;
+
             const request = {
                 standortId: Number(button.dataset.standortId),
                 datum: button.dataset.datum,
@@ -361,7 +444,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 updateSlotDom(data.slot);
                 updateEmployeeRest(data.employeeRest);
-                showStatus("Belegung entfernt.");
+
+                if (removedMitarbeiterId) {
+                    undoState = {
+                        type: "remove",
+                        previous: {
+                            standortId: request.standortId,
+                            datum: request.datum,
+                            slot: request.slot,
+                            mitarbeiterId: removedMitarbeiterId
+                        }
+                    };
+
+                    showUndoStatus("Belegung entfernt.", async () => {
+                        if (!undoState) return;
+
+                        await handleAssign({
+                            standortId: undoState.previous.standortId,
+                            mitarbeiterId: undoState.previous.mitarbeiterId,
+                            datum: undoState.previous.datum,
+                            slot: undoState.previous.slot,
+                            forceMaxHoursOverride: true
+                        });
+
+                        undoState = null;
+                        showStatus("Entfernen rückgängig gemacht.");
+                    });
+                } else {
+                    showStatus("Belegung entfernt.");
+                }
             } catch {
                 showStatus("Belegung konnte nicht entfernt werden.", true);
             }
