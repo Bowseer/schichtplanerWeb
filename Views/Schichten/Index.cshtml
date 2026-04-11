@@ -1,5 +1,4 @@
 ﻿@model IEnumerable<Schicht>
-
 @{
     ViewData["Title"] = "Schichten";
 }
@@ -9,7 +8,6 @@
 </div>
 
 <form method="get" class="row g-3 mb-3">
-
     <div class="col-md-3">
         <label class="form-label">Mitarbeiter</label>
         <select name="mitarbeiterId" asp-items="ViewBag.MitarbeiterId" class="form-select">
@@ -58,9 +56,9 @@
                 <td>@s.Datum.ToString("dd.MM.yyyy")</td>
                 <td>
                     @(
-                        s.Slot == 1 ? "FrÃ¼h" :
+                        s.Slot == 1 ? "Fr\u00FCh" :
                         s.Slot == 2 ? "Flex" :
-                        s.Slot == 3 ? "SpÃ¤t" : "?"
+                        s.Slot == 3 ? "Sp\u00E4t" : "?"
                     )
                 </td>
                 <td>@s.Mitarbeiter?.VollerName</td>
