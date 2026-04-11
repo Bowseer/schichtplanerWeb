@@ -51,6 +51,7 @@
                  style="border-left: 10px solid @m.Farbe;">
                 <div class="mitarbeiter-name">@m.Name</div>
                 <div class="mitarbeiter-rest">Rest: @m.Reststunden h</div>
+                <div class="mitarbeiter-farbe-info">Farbe #@m.ReihenfolgeFarbe</div>
             </div>
         }
     </div>
@@ -101,7 +102,50 @@
                                      data-standort-id="@Model.StandortId"
                                      data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
                                      data-slot="@slot.Slot">
-                                    <div class="slot-label">Slot @slot.Slot</div>
+                                    <div class="slot-header">
+                                        <div class="slot-label">@slot.SlotName</div>
+                                        <button type="button"
+                                                class="slot-edit-toggle"
+                                                data-target="slot-edit-@tag.Datum.ToString("yyyyMMdd")-@slot.Slot">
+                                            Zeiten
+                                        </button>
+                                    </div>
+
+                                    <div class="slot-zeit">@slot.Beginn - @slot.Ende</div>
+
+                                    <div id="slot-edit-@tag.Datum.ToString("yyyyMMdd")-@slot.Slot"
+                                         class="slot-edit-panel"
+                                         hidden>
+                                        <div class="slot-edit-row">
+                                            <label>Beginn</label>
+                                            <input type="time"
+                                                   class="slot-beginn"
+                                                   value="@slot.Beginn" />
+                                        </div>
+                                        <div class="slot-edit-row">
+                                            <label>Ende</label>
+                                            <input type="time"
+                                                   class="slot-ende"
+                                                   value="@slot.Ende" />
+                                        </div>
+                                        <div class="slot-edit-actions">
+                                            <button type="button"
+                                                    class="save-slot-time"
+                                                    data-scope="day"
+                                                    data-standort-id="@Model.StandortId"
+                                                    data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                                    data-slot="@slot.Slot">
+                                                Tag speichern
+                                            </button>
+                                            <button type="button"
+                                                    class="save-slot-time"
+                                                    data-scope="default"
+                                                    data-standort-id="@Model.StandortId"
+                                                    data-slot="@slot.Slot">
+                                                Standard speichern
+                                            </button>
+                                        </div>
+                                    </div>
 
                                     @if (!string.IsNullOrWhiteSpace(slot.MitarbeiterName))
                                     {

@@ -82,7 +82,8 @@ body { background-color: #f8f9fa; }
     font-weight: 600;
 }
 
-.mitarbeiter-rest {
+.mitarbeiter-rest,
+.mitarbeiter-farbe-info {
     font-size: 0.9rem;
     color: #555;
 }
@@ -109,7 +110,7 @@ body { background-color: #f8f9fa; }
 .kalender-tag {
     border: 1px solid #d7d7d7;
     border-radius: 8px;
-    min-height: 180px;
+    min-height: 210px;
     background: white;
     padding: 8px;
     display: flex;
@@ -156,7 +157,7 @@ body { background-color: #f8f9fa; }
     border: 1px dashed #b9b9b9;
     border-radius: 6px;
     padding: 6px;
-    min-height: 42px;
+    min-height: 56px;
     background: #fafafa;
 }
 
@@ -165,10 +166,55 @@ body { background-color: #f8f9fa; }
     background: #eaf2ff;
 }
 
+.slot-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+
 .slot-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.slot-edit-toggle,
+.save-slot-time {
     font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.slot-zeit {
+    font-size: 0.8rem;
     color: #666;
-    margin-bottom: 4px;
+    margin: 4px 0 6px 0;
+}
+
+.slot-edit-panel {
+    border-top: 1px solid #ddd;
+    margin-top: 6px;
+    padding-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slot-edit-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+
+.slot-edit-row label {
+    font-size: 0.8rem;
+}
+
+.slot-edit-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .slot-belegung {
@@ -176,11 +222,13 @@ body { background-color: #f8f9fa; }
     padding: 6px;
     font-size: 0.9rem;
     color: #222;
+    margin-top: 6px;
 }
 
 .slot-leer {
     font-size: 0.85rem;
     color: #888;
+    margin-top: 6px;
 }
 
 .planung-status {

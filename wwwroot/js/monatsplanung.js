@@ -25,17 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    if (standort) {
-        standort.addEventListener("change", submitFilter);
-    }
-
-    if (jahr) {
-        jahr.addEventListener("change", submitFilter);
-    }
-
-    if (monat) {
-        monat.addEventListener("change", submitFilter);
-    }
+    if (standort) standort.addEventListener("change", submitFilter);
+    if (jahr) jahr.addEventListener("change", submitFilter);
+    if (monat) monat.addEventListener("change", submitFilter);
 
     document.querySelectorAll(".mitarbeiter-card").forEach((item) => {
         item.addEventListener("dragstart", (event) => {
@@ -65,9 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
             zone.classList.remove("dragover");
 
             const raw = event.dataTransfer.getData("application/json");
-            if (!raw) {
-                return;
-            }
+            if (!raw) return;
 
             const dragged = JSON.parse(raw);
             const request = {
@@ -97,6 +87,55 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.location.reload();
             } catch {
                 showStatus("Speichern fehlgeschlagen.", true);
+            }
+        });
+    });
+
+    document.querySelectorAll(".slot-edit-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+            const targetId = button.dataset.target;
+            const panel = document.getElementById(targetId);
+            if (!panel) return;
+            panel.hidden = !panel.hidden;
+        });
+    });
+
+    document.querySelectorAll(".save-slot-time").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const panel = button.closest(".slot-edit-panel");
+            if (!panel) return;
+
+            const beginn = panel.querySelector(".slot-beginn")?.value;
+            const ende = panel.querySelector(".slot-ende")?.value;
+
+            const request = {
+                standortId: Number(button.dataset.standortId),
+                datum: button.dataset.scope === "day" ? button.dataset.datum : null,
+                slot: Number(button.dataset.slot),
+                beginn: beginn,
+                ende: ende
+            };
+
+            try {
+                const response = await fetch("/Monatsplanung/SaveSlotTime", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showStatus(data.message || "Zeit konnte nicht gespeichert werden.", true);
+                    return;
+                }
+
+                window.location.reload();
+            } catch {
+                showStatus("Zeit konnte nicht gespeichert werden.", true);
             }
         });
     });

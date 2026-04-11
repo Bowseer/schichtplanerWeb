@@ -25,6 +25,7 @@ public class MitarbeiterSidebarDto
     public string Name { get; set; } = string.Empty;
     public string Farbe { get; set; } = string.Empty;
     public decimal Reststunden { get; set; }
+    public int ReihenfolgeFarbe { get; set; }
 }
 
 public class KalenderWocheDto
@@ -45,6 +46,9 @@ public class KalenderTagDto
 public class KalenderSlotDto
 {
     public int Slot { get; set; }
+    public string SlotName { get; set; } = string.Empty;
+    public string Beginn { get; set; } = string.Empty;
+    public string Ende { get; set; } = string.Empty;
     public int? MitarbeiterId { get; set; }
     public string? MitarbeiterName { get; set; }
     public string? Farbe { get; set; }

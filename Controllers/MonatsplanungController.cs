@@ -35,6 +35,20 @@ public class MonatsplanungController : Controller
             .ToListAsync();
 
         var selectedStandort = standortId ?? standorte.FirstOrDefault()?.Id;
+        if (selectedStandort == null)
+        {
+            return View(new MonatsplanViewModel
+            {
+                Jahr = targetYear,
+                Monat = targetMonth
+            });
+        }
+
+        var standort = await _db.Standorte.FirstAsync(s => s.Id == selectedStandort.Value);
+
+        var slotOverrides = await _db.TagesSlotZeiten
+            .Where(t => t.StandortId == selectedStandort.Value && t.Datum >= start && t.Datum < end)
+            .ToListAsync();
 
         var mitarbeiter = await _db.Mitarbeiter
             .Where(m => m.StandortId == selectedStandort && m.Aktiv)
@@ -42,6 +56,15 @@ public class MonatsplanungController : Controller
             .OrderBy(m => m.Nachname)
             .ThenBy(m => m.Vorname)
             .ToListAsync();
+
+        var colorMap = mitarbeiter
+            .Select((m, index) => new
+            {
+                MitarbeiterId = m.Id,
+                Farbe = GetColorForIndex(index),
+                Reihenfolge = index + 1
+            })
+            .ToDictionary(x => x.MitarbeiterId, x => new { x.Farbe, x.Reihenfolge });
 
         var model = new MonatsplanViewModel
         {
@@ -52,21 +75,21 @@ public class MonatsplanungController : Controller
             {
                 Id = s.Id,
                 Name = s.Name
+            }).ToList(),
+            Mitarbeiter = mitarbeiter.Select(m =>
+            {
+                var geplant = m.Schichten.Sum(s => s.Stunden);
+
+                return new MitarbeiterSidebarDto
+                {
+                    Id = m.Id,
+                    Name = m.VollerName,
+                    Reststunden = m.MaxStundenProMonat - geplant,
+                    Farbe = colorMap[m.Id].Farbe,
+                    ReihenfolgeFarbe = colorMap[m.Id].Reihenfolge
+                };
             }).ToList()
         };
-
-        model.Mitarbeiter = mitarbeiter.Select(m =>
-        {
-            var geplant = m.Schichten.Sum(s => s.Stunden);
-
-            return new MitarbeiterSidebarDto
-            {
-                Id = m.Id,
-                Name = m.VollerName,
-                Reststunden = m.MaxStundenProMonat - geplant,
-                Farbe = GetColorForEmployee(m.Id)
-            };
-        }).ToList();
 
         var schichtenLookup = mitarbeiter
             .SelectMany(m => m.Schichten.Select(s => new
@@ -108,13 +131,18 @@ public class MonatsplanungController : Controller
                         x.Schicht.Datum == currentDate &&
                         x.Schicht.Slot == slot);
 
+                    var slotZeit = GetSlotZeitForDate(standort, slotOverrides, currentDate, slot);
+
                     tag.Slots.Add(new KalenderSlotDto
                     {
                         Slot = slot,
+                        SlotName = GetSlotName(slot),
+                        Beginn = slotZeit.Beginn.ToString(@"hh\:mm"),
+                        Ende = slotZeit.Ende.ToString(@"hh\:mm"),
                         MitarbeiterId = belegung?.MitarbeiterId,
                         MitarbeiterName = belegung?.MitarbeiterName,
                         Farbe = belegung != null
-                            ? GetColorForEmployee(belegung.MitarbeiterId)
+                            ? colorMap[belegung.MitarbeiterId].Farbe
                             : null
                     });
                 }
@@ -159,13 +187,26 @@ public class MonatsplanungController : Controller
             return BadRequest(new { success = false, message = "Mitarbeiter gehört nicht zu diesem Standort." });
         }
 
+        var standort = await _db.Standorte
+            .AsNoTracking()
+            .FirstAsync(s => s.Id == request.StandortId);
+
+        var overrideZeit = await _db.TagesSlotZeiten
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t =>
+                t.StandortId == request.StandortId &&
+                t.Datum == datum &&
+                t.Slot == request.Slot);
+
+        var slotZeit = overrideZeit != null
+            ? (overrideZeit.Beginn, overrideZeit.Ende)
+            : GetDefaultSlotZeit(standort, request.Slot);
+
         var bestehendeSlotSchicht = await _db.Schichten
             .FirstOrDefaultAsync(s =>
                 s.StandortId == request.StandortId &&
                 s.Datum == datum &&
                 s.Slot == request.Slot);
-
-        var (beginn, ende) = GetSlotTimes(request.Slot);
 
         if (bestehendeSlotSchicht == null)
         {
@@ -175,8 +216,8 @@ public class MonatsplanungController : Controller
                 StandortId = request.StandortId,
                 Datum = datum,
                 Slot = request.Slot,
-                Beginn = beginn,
-                Ende = ende,
+                Beginn = slotZeit.Item1,
+                Ende = slotZeit.Item2,
                 PauseMinuten = 0
             };
 
@@ -191,8 +232,8 @@ public class MonatsplanungController : Controller
         else
         {
             bestehendeSlotSchicht.MitarbeiterId = request.MitarbeiterId;
-            bestehendeSlotSchicht.Beginn = beginn;
-            bestehendeSlotSchicht.Ende = ende;
+            bestehendeSlotSchicht.Beginn = slotZeit.Item1;
+            bestehendeSlotSchicht.Ende = slotZeit.Item2;
             bestehendeSlotSchicht.PauseMinuten = 0;
             bestehendeSlotSchicht.Slot = request.Slot;
             bestehendeSlotSchicht.StandortId = request.StandortId;
@@ -210,21 +251,145 @@ public class MonatsplanungController : Controller
         return Ok(new { success = true });
     }
 
-    private static string GetColorForEmployee(int mitarbeiterId)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Planer")]
+    public async Task<IActionResult> SaveSlotTime([FromBody] SaveSlotTimeRequest request)
     {
-        var hue = (mitarbeiterId * 57) % 360;
-        return $"hsl({hue}, 70%, 75%)";
+        if (request.StandortId <= 0 || request.Slot is < 1 or > 3)
+        {
+            return BadRequest(new { success = false, message = "Ungültige Daten." });
+        }
+
+        if (!TimeSpan.TryParse(request.Beginn, out var beginn) || !TimeSpan.TryParse(request.Ende, out var ende))
+        {
+            return BadRequest(new { success = false, message = "Ungültige Uhrzeit." });
+        }
+
+        if (ende <= beginn)
+        {
+            return BadRequest(new { success = false, message = "Ende muss nach Beginn liegen." });
+        }
+
+        var standort = await _db.Standorte.FirstOrDefaultAsync(s => s.Id == request.StandortId);
+        if (standort == null)
+        {
+            return NotFound(new { success = false, message = "Standort nicht gefunden." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Datum))
+        {
+            ApplyDefaultSlotZeit(standort, request.Slot, beginn, ende);
+            await _db.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        if (!DateOnly.TryParse(request.Datum, out var datum))
+        {
+            return BadRequest(new { success = false, message = "Ungültiges Datum." });
+        }
+
+        var overrideZeit = await _db.TagesSlotZeiten
+            .FirstOrDefaultAsync(t =>
+                t.StandortId == request.StandortId &&
+                t.Datum == datum &&
+                t.Slot == request.Slot);
+
+        if (overrideZeit == null)
+        {
+            overrideZeit = new TagesSlotZeit
+            {
+                StandortId = request.StandortId,
+                Datum = datum,
+                Slot = request.Slot,
+                Beginn = beginn,
+                Ende = ende
+            };
+            _db.TagesSlotZeiten.Add(overrideZeit);
+        }
+        else
+        {
+            overrideZeit.Beginn = beginn;
+            overrideZeit.Ende = ende;
+        }
+
+        var schichten = await _db.Schichten
+            .Where(s => s.StandortId == request.StandortId && s.Datum == datum && s.Slot == request.Slot)
+            .ToListAsync();
+
+        foreach (var schicht in schichten)
+        {
+            schicht.Beginn = beginn;
+            schicht.Ende = ende;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true });
     }
 
-    private static (TimeSpan Beginn, TimeSpan Ende) GetSlotTimes(int slot)
+    private static string GetSlotName(int slot)
     {
         return slot switch
         {
-            1 => (new TimeSpan(8, 0, 0), new TimeSpan(12, 0, 0)),
-            2 => (new TimeSpan(12, 0, 0), new TimeSpan(16, 0, 0)),
-            3 => (new TimeSpan(16, 0, 0), new TimeSpan(20, 0, 0)),
+            1 => "Früh",
+            2 => "Tag",
+            3 => "Spät",
+            _ => $"Slot {slot}"
+        };
+    }
+
+    private static (TimeSpan Beginn, TimeSpan Ende) GetSlotZeitForDate(
+        Standort standort,
+        List<TagesSlotZeit> overrides,
+        DateOnly datum,
+        int slot)
+    {
+        var overrideZeit = overrides.FirstOrDefault(t => t.Datum == datum && t.Slot == slot);
+        if (overrideZeit != null)
+        {
+            return (overrideZeit.Beginn, overrideZeit.Ende);
+        }
+
+        return GetDefaultSlotZeit(standort, slot);
+    }
+
+    private static (TimeSpan Beginn, TimeSpan Ende) GetDefaultSlotZeit(Standort standort, int slot)
+    {
+        return slot switch
+        {
+            1 => (standort.FruehBeginn, standort.FruehEnde),
+            2 => (standort.TagBeginn, standort.TagEnde),
+            3 => (standort.SpaetBeginn, standort.SpaetEnde),
             _ => throw new ArgumentOutOfRangeException(nameof(slot))
         };
+    }
+
+    private static void ApplyDefaultSlotZeit(Standort standort, int slot, TimeSpan beginn, TimeSpan ende)
+    {
+        switch (slot)
+        {
+            case 1:
+                standort.FruehBeginn = beginn;
+                standort.FruehEnde = ende;
+                break;
+            case 2:
+                standort.TagBeginn = beginn;
+                standort.TagEnde = ende;
+                break;
+            case 3:
+                standort.SpaetBeginn = beginn;
+                standort.SpaetEnde = ende;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(slot));
+        }
+    }
+
+    private static string GetColorForIndex(int index)
+    {
+        double hue = (index * 137.508) % 360;
+        return $"hsl({hue:F0}, 70%, 75%)";
     }
 }
 
@@ -234,4 +399,13 @@ public class AssignSlotRequest
     public int MitarbeiterId { get; set; }
     public string Datum { get; set; } = string.Empty;
     public int Slot { get; set; }
+}
+
+public class SaveSlotTimeRequest
+{
+    public int StandortId { get; set; }
+    public string? Datum { get; set; }
+    public int Slot { get; set; }
+    public string Beginn { get; set; } = string.Empty;
+    public string Ende { get; set; } = string.Empty;
 }
