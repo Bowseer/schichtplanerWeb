@@ -15,13 +15,13 @@ public class Standort
 
     public Bundesland Bundesland { get; set; } = Bundesland.Berlin;
 
-    public TimeSpan FruehBeginn { get; set; } = new(8, 0, 0);
-    public TimeSpan FruehEnde { get; set; } = new(12, 0, 0);
+    public TimeSpan FruehBeginn { get; set; } = new(10, 0, 0);
+    public TimeSpan FruehEnde { get; set; } = new(17, 0, 0);
 
     public TimeSpan TagBeginn { get; set; } = new(12, 0, 0);
     public TimeSpan TagEnde { get; set; } = new(16, 0, 0);
 
-    public TimeSpan SpaetBeginn { get; set; } = new(16, 0, 0);
+    public TimeSpan SpaetBeginn { get; set; } = new(15, 0, 0);
     public TimeSpan SpaetEnde { get; set; } = new(20, 0, 0);
 
     public ICollection<Mitarbeiter> Mitarbeiter { get; set; } = new List<Mitarbeiter>();

@@ -107,7 +107,7 @@ public class MonatsplanungController : Controller
                 new()
                 {
                     Slot = 2,
-                    SlotName = "Tag",
+                    SlotName = "Flex",
                     Beginn = standort.TagBeginn.ToString(@"hh\:mm"),
                     Ende = standort.TagEnde.ToString(@"hh\:mm")
                 },
@@ -539,7 +539,7 @@ public class MonatsplanungController : Controller
         return slot switch
         {
             1 => "Früh",
-            2 => "Tag",
+            2 => "Flex",
             3 => "Spät",
             _ => $"Slot {slot}"
         };

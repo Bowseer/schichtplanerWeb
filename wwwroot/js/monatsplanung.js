@@ -94,6 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (existing) {
             existing.remove();
         }
+
+        if (Number(slotData.slot) === 2) {
+            zone.classList.add("slot-hidden");
+        }
     };
 
     const updateSlotDom = (slotData) => {
@@ -101,15 +105,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clearSlotDom(slotData);
 
-        if (!slotData.mitarbeiterName) {
-            return;
-        }
-
         const zone = document.querySelector(
             `.slot-dropzone[data-standort-id="${slotData.standortId}"][data-datum="${slotData.datum}"][data-slot="${slotData.slot}"]`
         );
 
-        if (!zone) return;
+        if (!zone || !slotData.mitarbeiterName) {
+            return;
+        }
+
+        zone.classList.remove("slot-hidden");
 
         const belegung = document.createElement("div");
         belegung.className = "slot-belegung compact-slot-belegung";
@@ -133,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
         removeButton.dataset.datum = slotData.datum;
         removeButton.dataset.slot = slotData.slot;
         removeButton.title = "Belegung entfernen";
-        removeButton.textContent = "×";
+        removeButton.innerHTML = "&times;";
 
         belegung.appendChild(name);
         belegung.appendChild(removeButton);
@@ -145,17 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const saveDrop = async (payload) => {
         const response = await fetch("/Monatsplanung/AssignSlot", {
-            method: "POST",
-            headers: antiforgery(),
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        return { response, data };
-    };
-
-    const removeSlot = async (payload) => {
-        const response = await fetch("/Monatsplanung/RemoveSlot", {
             method: "POST",
             headers: antiforgery(),
             body: JSON.stringify(payload)
@@ -214,6 +207,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (standort) standort.addEventListener("change", submitFilter);
     if (jahr) jahr.addEventListener("change", submitFilter);
     if (monat) monat.addEventListener("change", submitFilter);
+
+    document.querySelectorAll(".show-flex-slot").forEach((button) => {
+        button.addEventListener("click", () => {
+            const targetId = button.dataset.target;
+            const slot = document.getElementById(targetId);
+            if (!slot) return;
+            slot.classList.remove("slot-hidden");
+        });
+    });
 
     document.querySelectorAll(".mitarbeiter-card").forEach((item) => {
         item.addEventListener("dragstart", (event) => {

@@ -2,12 +2,28 @@
 
 @{
     ViewData["Title"] = "Monatsplanung";
+    var prev = new DateTime(Model.Jahr, Model.Monat, 1).AddMonths(-1);
+    var next = new DateTime(Model.Jahr, Model.Monat, 1).AddMonths(1);
 }
 
 <h2>Monatsplanung</h2>
 
 <form id="filterForm" method="get" class="planung-toolbar">
     @Html.AntiForgeryToken()
+
+    <div class="monat-navigation">
+        <a class="btn btn-sm btn-outline-secondary"
+           asp-action="Index"
+           asp-route-jahr="@prev.Year"
+           asp-route-monat="@prev.Month"
+           asp-route-standortId="@Model.StandortId">← Vorheriger Monat</a>
+
+        <a class="btn btn-sm btn-outline-secondary"
+           asp-action="Index"
+           asp-route-jahr="@next.Year"
+           asp-route-monat="@next.Month"
+           asp-route-standortId="@Model.StandortId">Nächster Monat →</a>
+    </div>
 
     <div class="toolbar-group">
         <label for="standortId">Standort</label>
@@ -73,7 +89,6 @@
                  data-mitarbeiter-id="@m.Id"
                  data-mitarbeiter-name="@m.Name"
                  data-color="@m.Farbe"
-                 data-rest-target="employee-rest-@m.Id"
                  style="border-left: 8px solid @m.Farbe;">
                 <div class="mitarbeiter-name">@m.Name</div>
                 <div class="mitarbeiter-rest" id="employee-rest-@m.Id">Rest: @m.Reststunden h</div>
@@ -126,12 +141,21 @@
                                     }
                                 </div>
 
-                                <button type="button"
-                                        class="day-edit-toggle icon-button"
-                                        data-target="day-edit-@tag.Datum.ToString("yyyyMMdd")"
-                                        title="Tageszeiten bearbeiten">
-                                    ✎
-                                </button>
+                                <div class="tag-actions">
+                                    <button type="button"
+                                            class="show-flex-slot icon-button"
+                                            data-target="flex-slot-@tag.Datum.ToString("yyyyMMdd")"
+                                            title="Flex anzeigen">
+                                        +
+                                    </button>
+
+                                    <button type="button"
+                                            class="day-edit-toggle icon-button"
+                                            data-target="day-edit-@tag.Datum.ToString("yyyyMMdd")"
+                                            title="Tageszeiten bearbeiten">
+                                        ✎
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="day-edit-@tag.Datum.ToString("yyyyMMdd")"
@@ -164,7 +188,10 @@
                             <div class="tag-slots compact-slots">
                                 @foreach (var slot in tag.Slots)
                                 {
-                                    <div class="slot-dropzone compact-slot"
+                                    var hideFlex = slot.Slot == 2 && string.IsNullOrWhiteSpace(slot.MitarbeiterName);
+
+                                    <div id="@(slot.Slot == 2 ? $"flex-slot-{tag.Datum:yyyyMMdd}" : null)"
+                                         class="slot-dropzone compact-slot @(hideFlex ? "slot-hidden" : "")"
                                          data-standort-id="@Model.StandortId"
                                          data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
                                          data-slot="@slot.Slot">
