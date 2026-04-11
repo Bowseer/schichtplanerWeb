@@ -23,8 +23,13 @@ public class SchichtenController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var schichten = await _db.Schichten.Include(s => s.Mitarbeiter).Include(s => s.Standort)
-            .OrderByDescending(s => s.Datum).ThenBy(s => s.Beginn).ToListAsync();
+        var schichten = await _db.Schichten
+            .Include(s => s.Mitarbeiter)
+            .Include(s => s.Standort)
+            .OrderByDescending(s => s.Datum)
+            .ThenBy(s => s.Beginn)
+            .ToListAsync();
+
         return View(schichten);
     }
 
@@ -37,6 +42,7 @@ public class SchichtenController : Controller
             Beginn = new TimeSpan(9, 0, 0),
             Ende = new TimeSpan(17, 0, 0)
         };
+
         await LoadListsAsync(vm);
         return View(vm);
     }
@@ -79,7 +85,10 @@ public class SchichtenController : Controller
     public async Task<IActionResult> Edit(int id)
     {
         var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null) return NotFound();
+        if (entity == null)
+        {
+            return NotFound();
+        }
 
         var vm = new SchichtEditViewModel
         {
@@ -101,7 +110,11 @@ public class SchichtenController : Controller
     [Authorize(Roles = "Admin,Planer")]
     public async Task<IActionResult> Edit(int id, SchichtEditViewModel vm)
     {
-        if (id != vm.Id) return NotFound();
+        if (id != vm.Id)
+        {
+            return NotFound();
+        }
+
         if (!ModelState.IsValid)
         {
             await LoadListsAsync(vm);
@@ -109,7 +122,10 @@ public class SchichtenController : Controller
         }
 
         var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null) return NotFound();
+        if (entity == null)
+        {
+            return NotFound();
+        }
 
         entity.MitarbeiterId = vm.MitarbeiterId;
         entity.StandortId = vm.StandortId;
@@ -133,8 +149,17 @@ public class SchichtenController : Controller
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var entity = await _db.Schichten.Include(s => s.Mitarbeiter).Include(s => s.Standort).FirstOrDefaultAsync(s => s.Id == id);
-        return entity == null ? NotFound() : View(entity);
+        var entity = await _db.Schichten
+            .Include(s => s.Mitarbeiter)
+            .Include(s => s.Standort)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (entity == null)
+        {
+            return NotFound();
+        }
+
+        return View(entity);
     }
 
     [HttpPost, ActionName("Delete")]
@@ -143,7 +168,10 @@ public class SchichtenController : Controller
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var entity = await _db.Schichten.FindAsync(id);
-        if (entity == null) return NotFound();
+        if (entity == null)
+        {
+            return NotFound();
+        }
 
         _db.Schichten.Remove(entity);
         await _db.SaveChangesAsync();
@@ -152,25 +180,47 @@ public class SchichtenController : Controller
 
     private async Task LoadListsAsync(SchichtCreateViewModel vm)
     {
-        vm.MitarbeiterListe = await _db.Mitarbeiter.Where(m => m.Aktiv)
-            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem { Value = m.Id.ToString(), Text = m.VollerName })
+        vm.MitarbeiterListe = await _db.Mitarbeiter
+            .Where(m => m.Aktiv)
+            .OrderBy(m => m.Nachname)
+            .ThenBy(m => m.Vorname)
+            .Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.VollerName
+            })
             .ToListAsync();
 
-        vm.StandortListe = await _db.Standorte.OrderBy(s => s.Name)
-            .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+        vm.StandortListe = await _db.Standorte
+            .OrderBy(s => s.Name)
+            .Select(s => new SelectListItem
+            {
+                Value = s.Id.ToString(),
+                Text = s.Name
+            })
             .ToListAsync();
     }
 
     private async Task LoadListsAsync(SchichtEditViewModel vm)
     {
-        vm.MitarbeiterListe = await _db.Mitarbeiter.Where(m => m.Aktiv)
-            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem { Value = m.Id.ToString(), Text = m.VollerName })
+        vm.MitarbeiterListe = await _db.Mitarbeiter
+            .Where(m => m.Aktiv)
+            .OrderBy(m => m.Nachname)
+            .ThenBy(m => m.Vorname)
+            .Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.VollerName
+            })
             .ToListAsync();
 
-        vm.StandortListe = await _db.Standorte.OrderBy(s => s.Name)
-            .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+        vm.StandortListe = await _db.Standorte
+            .OrderBy(s => s.Name)
+            .Select(s => new SelectListItem
+            {
+                Value = s.Id.ToString(),
+                Text = s.Name
+            })
             .ToListAsync();
     }
 }

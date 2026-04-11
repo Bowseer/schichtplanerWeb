@@ -7,6 +7,6 @@
     "\\Models\\ViewModels",
     "\\Services"
   ],
-  "SelectedNode": "\\Services\\SchichtService.cs",
+  "SelectedNode": "\\Controllers\\HomeController.cs",
   "PreviewInSolutionExplorer": false
 }
