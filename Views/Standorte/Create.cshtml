@@ -1,4 +1,5 @@
-﻿@model Standort
+﻿@model Schichtplaner.Models.ViewModels.StandortEditViewModel
+
 @{
     ViewData["Title"] = "Standort anlegen";
 }
@@ -25,6 +26,46 @@
         <select asp-for="Bundesland" asp-items="Html.GetEnumSelectList<Bundesland>()" class="form-select"></select>
         <span asp-validation-for="Bundesland" class="text-danger"></span>
     </div>
+
+    <h3>Standard-Schichtzeiten pro Wochentag</h3>
+
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Wochentag</th>
+                <th>Slot</th>
+                <th>Aktiv</th>
+                <th>Beginn</th>
+                <th>Ende</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.SlotZeiten.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Model.SlotZeiten[i].WochentagName
+                        <input asp-for="SlotZeiten[i].Wochentag" type="hidden" />
+                        <input asp-for="SlotZeiten[i].WochentagName" type="hidden" />
+                    </td>
+                    <td>
+                        @Model.SlotZeiten[i].SlotName
+                        <input asp-for="SlotZeiten[i].Slot" type="hidden" />
+                        <input asp-for="SlotZeiten[i].SlotName" type="hidden" />
+                    </td>
+                    <td>
+                        <input asp-for="SlotZeiten[i].Aktiv" class="form-check-input" />
+                    </td>
+                    <td>
+                        <input asp-for="SlotZeiten[i].Beginn" type="time" class="form-control" />
+                    </td>
+                    <td>
+                        <input asp-for="SlotZeiten[i].Ende" type="time" class="form-control" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 
     <button type="submit" class="btn btn-primary">Speichern</button>
     <a asp-action="Index" class="btn btn-secondary">Abbrechen</a>

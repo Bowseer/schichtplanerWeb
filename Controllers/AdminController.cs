@@ -245,4 +245,36 @@ public class AdminController : Controller
             }).ToList()
         };
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+        {
+            TempData["Error"] = "Benutzer nicht gefunden.";
+            return RedirectToAction(nameof(Users));
+        }
+
+        // optional: sich selbst nicht löschen erlauben verhindern
+        var currentUserId = _userManager.GetUserId(User);
+        if (currentUserId == id)
+        {
+            TempData["Error"] = "Du kannst dich nicht selbst löschen.";
+            return RedirectToAction(nameof(Users));
+        }
+
+        var result = await _userManager.DeleteAsync(user);
+
+        if (!result.Succeeded)
+        {
+            TempData["Error"] = string.Join(" | ", result.Errors.Select(e => e.Description));
+            return RedirectToAction(nameof(Users));
+        }
+
+        TempData["Success"] = "Benutzer wurde gelöscht.";
+        return RedirectToAction(nameof(Users));
+    }
+
 }
