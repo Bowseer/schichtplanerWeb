@@ -18,20 +18,16 @@ public class MonatsplanungController : Controller
 
     public async Task<IActionResult> Index(int? jahr, int? monat)
     {
-        throw new Exception("NEUER CODE AKTIV");
         var today = DateOnly.FromDateTime(DateTime.Today);
-
         var targetYear = jahr ?? today.Year;
         var targetMonth = monat ?? today.Month;
 
-        // 🔴 HIER DER FIX
         var start = new DateOnly(targetYear, targetMonth, 1);
         var end = start.AddMonths(1);
 
         var mitarbeiter = await _db.Mitarbeiter
             .Include(m => m.Standort)
-            .Include(m => m.Schichten
-                .Where(s => s.Datum >= start && s.Datum < end))
+            .Include(m => m.Schichten.Where(s => s.Datum >= start && s.Datum < end))
             .Where(m => m.Aktiv)
             .OrderBy(m => m.Nachname)
             .ThenBy(m => m.Vorname)
