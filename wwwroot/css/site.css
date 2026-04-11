@@ -1,50 +1,21 @@
-body { background-color: #f8f9fa; }
-.card { border: 0; }
-.table td, .table th { vertical-align: middle; }
-
-.layout {
-    display: flex;
+body {
+    background-color: #f8f9fa;
 }
 
-.sidebar {
-    width: 200px;
+.card {
+    border: 0;
 }
 
-.mitarbeiter {
-    margin: 5px;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.kalender {
-    flex: 1;
-}
-
-.header, .woche {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-}
-
-.tag {
-    border: 1px solid #ccc;
-    min-height: 120px;
-}
-
-.sonntag {
-    background: #ffe0e0;
-}
-
-.slot {
-    margin: 2px;
-    padding: 2px;
-    font-size: 12px;
+.table td,
+.table th {
+    vertical-align: middle;
 }
 
 .planung-toolbar {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     align-items: end;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
 }
 
@@ -54,68 +25,120 @@ body { background-color: #f8f9fa; }
     gap: 4px;
 }
 
+.toolbar-group.compact input,
+.toolbar-group.compact select {
+    width: 100px;
+}
+
+.standard-slot-leiste {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.standard-slot-card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.standard-slot-title {
+    font-weight: 700;
+    min-width: 42px;
+}
+
+.icon-button {
+    border: 1px solid #d0d0d0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+    font-size: 0.85rem;
+}
+
+.compact-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 10px;
+}
+
 .layout {
     display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 16px;
+    grid-template-columns: 220px 1fr;
+    gap: 10px;
 }
 
 .sidebar {
     background: #f8f9fa;
     border: 1px solid #ddd;
     border-radius: 8px;
-    padding: 12px;
+    padding: 10px;
     height: fit-content;
 }
 
 .mitarbeiter-card {
     background: white;
     border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
+    border-radius: 6px;
+    padding: 7px 8px;
+    margin-bottom: 7px;
     cursor: grab;
     user-select: none;
 }
 
-.mitarbeiter-name {
-    font-weight: 600;
+.compact-card {
+    padding: 6px 8px;
 }
 
-.mitarbeiter-rest,
-.mitarbeiter-farbe-info {
-    font-size: 0.9rem;
+.mitarbeiter-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.mitarbeiter-rest {
+    font-size: 0.78rem;
     color: #555;
 }
 
 .kalender {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .kalender-header,
 .kalender-woche {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    gap: 6px;
 }
 
+.compact-header > div,
 .kalender-header > div {
     font-weight: 700;
     text-align: center;
-    padding: 8px 0;
+    padding: 4px 0;
+    font-size: 0.9rem;
 }
 
 .kalender-tag {
     border: 1px solid #d7d7d7;
     border-radius: 8px;
-    min-height: 210px;
     background: white;
-    padding: 8px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+}
+
+.compact-tag {
+    min-height: 132px;
 }
 
 .kalender-tag.anderer-monat {
@@ -137,28 +160,60 @@ body { background-color: #f8f9fa; }
     align-items: start;
 }
 
+.compact-tag-kopf {
+    margin-bottom: 2px;
+}
+
 .tag-datum {
     font-weight: 700;
+    font-size: 0.85rem;
 }
 
 .tag-feiertag {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     color: #b02a37;
-    text-align: right;
+    margin-left: 4px;
+}
+
+.day-edit-panel {
+    border-top: 1px solid #ddd;
+    padding-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.day-edit-slot-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr auto;
+    gap: 4px;
+    align-items: center;
+}
+
+.day-edit-slot-name {
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
 .tag-slots {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+}
+
+.compact-slots {
+    gap: 4px;
 }
 
 .slot-dropzone {
     border: 1px dashed #b9b9b9;
     border-radius: 6px;
-    padding: 6px;
-    min-height: 56px;
+    padding: 4px 5px;
     background: #fafafa;
+}
+
+.compact-slot {
+    min-height: 26px;
 }
 
 .slot-dropzone.dragover {
@@ -169,66 +224,38 @@ body { background-color: #f8f9fa; }
 .slot-header {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
     align-items: center;
 }
 
+.compact-slot-header {
+    align-items: baseline;
+}
+
 .slot-label {
-    font-size: 0.85rem;
+    font-size: 0.76rem;
     font-weight: 700;
     color: #333;
 }
 
-.slot-edit-toggle,
-.save-slot-time {
-    font-size: 0.75rem;
-    padding: 4px 8px;
-}
-
 .slot-zeit {
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     color: #666;
-    margin: 4px 0 6px 0;
-}
-
-.slot-edit-panel {
-    border-top: 1px solid #ddd;
-    margin-top: 6px;
-    padding-top: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.slot-edit-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    align-items: center;
-}
-
-.slot-edit-row label {
-    font-size: 0.8rem;
-}
-
-.slot-edit-actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
 }
 
 .slot-belegung {
     border-radius: 4px;
-    padding: 6px;
-    font-size: 0.9rem;
+    padding: 4px 6px;
+    font-size: 0.78rem;
     color: #222;
-    margin-top: 6px;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.slot-leer {
-    font-size: 0.85rem;
-    color: #888;
-    margin-top: 6px;
+.compact-slot-belegung {
+    margin-top: 2px;
 }
 
 .planung-status {

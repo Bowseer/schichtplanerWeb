@@ -61,10 +61,9 @@ public class MonatsplanungController : Controller
             .Select((m, index) => new
             {
                 MitarbeiterId = m.Id,
-                Farbe = GetColorForIndex(index),
-                Reihenfolge = index + 1
+                Farbe = GetColorForIndex(index)
             })
-            .ToDictionary(x => x.MitarbeiterId, x => new { x.Farbe, x.Reihenfolge });
+            .ToDictionary(x => x.MitarbeiterId, x => x.Farbe);
 
         var model = new MonatsplanViewModel
         {
@@ -85,10 +84,33 @@ public class MonatsplanungController : Controller
                     Id = m.Id,
                     Name = m.VollerName,
                     Reststunden = m.MaxStundenProMonat - geplant,
-                    Farbe = colorMap[m.Id].Farbe,
-                    ReihenfolgeFarbe = colorMap[m.Id].Reihenfolge
+                    Farbe = colorMap[m.Id]
                 };
-            }).ToList()
+            }).ToList(),
+            StandardSlotZeiten = new List<StandardSlotZeitDto>
+            {
+                new()
+                {
+                    Slot = 1,
+                    SlotName = "Früh",
+                    Beginn = standort.FruehBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.FruehEnde.ToString(@"hh\:mm")
+                },
+                new()
+                {
+                    Slot = 2,
+                    SlotName = "Tag",
+                    Beginn = standort.TagBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.TagEnde.ToString(@"hh\:mm")
+                },
+                new()
+                {
+                    Slot = 3,
+                    SlotName = "Spät",
+                    Beginn = standort.SpaetBeginn.ToString(@"hh\:mm"),
+                    Ende = standort.SpaetEnde.ToString(@"hh\:mm")
+                }
+            }
         };
 
         var schichtenLookup = mitarbeiter
@@ -142,7 +164,7 @@ public class MonatsplanungController : Controller
                         MitarbeiterId = belegung?.MitarbeiterId,
                         MitarbeiterName = belegung?.MitarbeiterName,
                         Farbe = belegung != null
-                            ? colorMap[belegung.MitarbeiterId].Farbe
+                            ? colorMap[belegung.MitarbeiterId]
                             : null
                     });
                 }
@@ -221,9 +243,22 @@ public class MonatsplanungController : Controller
                 PauseMinuten = 0
             };
 
-            var validation = await _schichtService.ValidateSchichtAsync(neueSchicht);
+            var validation = await _schichtService.ValidateSchichtAsync(
+                neueSchicht,
+                allowMaxHoursOverride: request.ForceMaxHoursOverride);
+
             if (!validation.Success)
             {
+                if (validation.RequiresConfirmation)
+                {
+                    return StatusCode(StatusCodes.Status409Conflict, new
+                    {
+                        success = false,
+                        message = validation.Message,
+                        requiresConfirmation = true
+                    });
+                }
+
                 return BadRequest(new { success = false, message = validation.Message });
             }
 
@@ -239,9 +274,23 @@ public class MonatsplanungController : Controller
             bestehendeSlotSchicht.StandortId = request.StandortId;
             bestehendeSlotSchicht.Datum = datum;
 
-            var validation = await _schichtService.ValidateSchichtAsync(bestehendeSlotSchicht, bestehendeSlotSchicht.Id);
+            var validation = await _schichtService.ValidateSchichtAsync(
+                bestehendeSlotSchicht,
+                bestehendeSlotSchicht.Id,
+                request.ForceMaxHoursOverride);
+
             if (!validation.Success)
             {
+                if (validation.RequiresConfirmation)
+                {
+                    return StatusCode(StatusCodes.Status409Conflict, new
+                    {
+                        success = false,
+                        message = validation.Message,
+                        requiresConfirmation = true
+                    });
+                }
+
                 return BadRequest(new { success = false, message = validation.Message });
             }
         }
@@ -399,6 +448,7 @@ public class AssignSlotRequest
     public int MitarbeiterId { get; set; }
     public string Datum { get; set; } = string.Empty;
     public int Slot { get; set; }
+    public bool ForceMaxHoursOverride { get; set; }
 }
 
 public class SaveSlotTimeRequest

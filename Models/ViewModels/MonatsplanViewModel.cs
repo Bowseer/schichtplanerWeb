@@ -9,6 +9,7 @@ public class MonatsplanViewModel
     public List<StandortDto> Standorte { get; set; } = new();
 
     public List<MitarbeiterSidebarDto> Mitarbeiter { get; set; } = new();
+    public List<StandardSlotZeitDto> StandardSlotZeiten { get; set; } = new();
 
     public List<KalenderWocheDto> Wochen { get; set; } = new();
 }
@@ -25,7 +26,14 @@ public class MitarbeiterSidebarDto
     public string Name { get; set; } = string.Empty;
     public string Farbe { get; set; } = string.Empty;
     public decimal Reststunden { get; set; }
-    public int ReihenfolgeFarbe { get; set; }
+}
+
+public class StandardSlotZeitDto
+{
+    public int Slot { get; set; }
+    public string SlotName { get; set; } = string.Empty;
+    public string Beginn { get; set; } = string.Empty;
+    public string Ende { get; set; } = string.Empty;
 }
 
 public class KalenderWocheDto

@@ -1,4 +1,4 @@
-@model MonatsplanViewModel
+﻿@model MonatsplanViewModel
 
 @{
     ViewData["Title"] = "Monatsplanung";
@@ -26,38 +26,62 @@
         </select>
     </div>
 
-    <div class="toolbar-group">
+    <div class="toolbar-group compact">
         <label for="jahr">Jahr</label>
         <input id="jahr" type="number" name="jahr" value="@Model.Jahr" />
     </div>
 
-    <div class="toolbar-group">
+    <div class="toolbar-group compact">
         <label for="monat">Monat</label>
         <input id="monat" type="number" name="monat" value="@Model.Monat" min="1" max="12" />
     </div>
 </form>
 
-<div class="layout">
+<div class="standard-slot-leiste">
+    @foreach (var standard in Model.StandardSlotZeiten)
+    {
+        <div class="standard-slot-card">
+            <div class="standard-slot-title">@standard.SlotName</div>
+            <input type="time"
+                   class="standard-slot-beginn"
+                   data-slot="@standard.Slot"
+                   value="@standard.Beginn" />
+            <span>–</span>
+            <input type="time"
+                   class="standard-slot-ende"
+                   data-slot="@standard.Slot"
+                   value="@standard.Ende" />
+            <button type="button"
+                    class="save-standard-slot-time"
+                    data-standort-id="@Model.StandortId"
+                    data-slot="@standard.Slot"
+                    title="Standard speichern">
+                💾
+            </button>
+        </div>
+    }
+</div>
+
+<div class="layout compact-layout">
     <div class="sidebar">
         <h3>Mitarbeiter</h3>
 
         @foreach (var m in Model.Mitarbeiter)
         {
-            <div class="mitarbeiter-card"
+            <div class="mitarbeiter-card compact-card"
                  draggable="true"
                  data-mitarbeiter-id="@m.Id"
                  data-mitarbeiter-name="@m.Name"
                  data-color="@m.Farbe"
-                 style="border-left: 10px solid @m.Farbe;">
+                 style="border-left: 8px solid @m.Farbe;">
                 <div class="mitarbeiter-name">@m.Name</div>
                 <div class="mitarbeiter-rest">Rest: @m.Reststunden h</div>
-                <div class="mitarbeiter-farbe-info">Farbe #@m.ReihenfolgeFarbe</div>
             </div>
         }
     </div>
 
     <div class="kalender">
-        <div class="kalender-header">
+        <div class="kalender-header compact-header">
             <div>Mo</div>
             <div>Di</div>
             <div>Mi</div>
@@ -69,10 +93,10 @@
 
         @foreach (var woche in Model.Wochen)
         {
-            <div class="kalender-woche">
+            <div class="kalender-woche compact-week">
                 @foreach (var tag in woche.Tage)
                 {
-                    var classes = "kalender-tag";
+                    var classes = "kalender-tag compact-tag";
                     if (tag.Datum.Month != Model.Monat)
                     {
                         classes += " anderer-monat";
@@ -87,76 +111,68 @@
                     }
 
                     <div class="@classes">
-                        <div class="tag-kopf">
-                            <span class="tag-datum">@tag.Datum.ToString("dd.MM")</span>
-                            @if (tag.IstFeiertag && !string.IsNullOrWhiteSpace(tag.FeiertagName))
+                        <div class="tag-kopf compact-tag-kopf">
+                            <div>
+                                <span class="tag-datum">@tag.Datum.ToString("dd.MM")</span>
+                                @if (tag.IstFeiertag && !string.IsNullOrWhiteSpace(tag.FeiertagName))
+                                {
+                                    <span class="tag-feiertag">@tag.FeiertagName</span>
+                                }
+                            </div>
+
+                            <button type="button"
+                                    class="day-edit-toggle icon-button"
+                                    data-target="day-edit-@tag.Datum.ToString("yyyyMMdd")"
+                                    title="Tageszeiten bearbeiten">
+                                ✎
+                            </button>
+                        </div>
+
+                        <div id="day-edit-@tag.Datum.ToString("yyyyMMdd")"
+                             class="day-edit-panel"
+                             hidden>
+                            @foreach (var slot in tag.Slots)
                             {
-                                <span class="tag-feiertag">@tag.FeiertagName</span>
+                                <div class="day-edit-slot-row">
+                                    <div class="day-edit-slot-name">@slot.SlotName</div>
+                                    <input type="time"
+                                           class="day-slot-beginn"
+                                           data-slot="@slot.Slot"
+                                           value="@slot.Beginn" />
+                                    <input type="time"
+                                           class="day-slot-ende"
+                                           data-slot="@slot.Slot"
+                                           value="@slot.Ende" />
+                                    <button type="button"
+                                            class="save-day-slot-time icon-button"
+                                            data-standort-id="@Model.StandortId"
+                                            data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                            data-slot="@slot.Slot"
+                                            title="Tag speichern">
+                                        💾
+                                    </button>
+                                </div>
                             }
                         </div>
 
-                        <div class="tag-slots">
+                        <div class="tag-slots compact-slots">
                             @foreach (var slot in tag.Slots)
                             {
-                                <div class="slot-dropzone"
+                                <div class="slot-dropzone compact-slot"
                                      data-standort-id="@Model.StandortId"
                                      data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
                                      data-slot="@slot.Slot">
-                                    <div class="slot-header">
+                                    <div class="slot-header compact-slot-header">
                                         <div class="slot-label">@slot.SlotName</div>
-                                        <button type="button"
-                                                class="slot-edit-toggle"
-                                                data-target="slot-edit-@tag.Datum.ToString("yyyyMMdd")-@slot.Slot">
-                                            Zeiten
-                                        </button>
-                                    </div>
-
-                                    <div class="slot-zeit">@slot.Beginn - @slot.Ende</div>
-
-                                    <div id="slot-edit-@tag.Datum.ToString("yyyyMMdd")-@slot.Slot"
-                                         class="slot-edit-panel"
-                                         hidden>
-                                        <div class="slot-edit-row">
-                                            <label>Beginn</label>
-                                            <input type="time"
-                                                   class="slot-beginn"
-                                                   value="@slot.Beginn" />
-                                        </div>
-                                        <div class="slot-edit-row">
-                                            <label>Ende</label>
-                                            <input type="time"
-                                                   class="slot-ende"
-                                                   value="@slot.Ende" />
-                                        </div>
-                                        <div class="slot-edit-actions">
-                                            <button type="button"
-                                                    class="save-slot-time"
-                                                    data-scope="day"
-                                                    data-standort-id="@Model.StandortId"
-                                                    data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
-                                                    data-slot="@slot.Slot">
-                                                Tag speichern
-                                            </button>
-                                            <button type="button"
-                                                    class="save-slot-time"
-                                                    data-scope="default"
-                                                    data-standort-id="@Model.StandortId"
-                                                    data-slot="@slot.Slot">
-                                                Standard speichern
-                                            </button>
-                                        </div>
+                                        <div class="slot-zeit">@slot.Beginn - @slot.Ende</div>
                                     </div>
 
                                     @if (!string.IsNullOrWhiteSpace(slot.MitarbeiterName))
                                     {
-                                        <div class="slot-belegung"
+                                        <div class="slot-belegung compact-slot-belegung"
                                              style="background:@slot.Farbe;">
                                             @slot.MitarbeiterName
                                         </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="slot-leer">frei</div>
                                     }
                                 </div>
                             }

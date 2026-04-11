@@ -13,11 +13,18 @@ public class SchichtService : ISchichtService
         _db = db;
     }
 
-    public async Task<(bool Success, string Message)> ValidateSchichtAsync(Schicht schicht, int? excludeSchichtId = null)
+    public async Task<SchichtValidationResult> ValidateSchichtAsync(
+        Schicht schicht,
+        int? excludeSchichtId = null,
+        bool allowMaxHoursOverride = false)
     {
         if (schicht.Ende <= schicht.Beginn)
         {
-            return (false, "Das Schichtende muss nach dem Beginn liegen.");
+            return new SchichtValidationResult
+            {
+                Success = false,
+                Message = "Das Schichtende muss nach dem Beginn liegen."
+            };
         }
 
         var mitarbeiter = await _db.Mitarbeiter
@@ -26,17 +33,29 @@ public class SchichtService : ISchichtService
 
         if (mitarbeiter == null)
         {
-            return (false, "Mitarbeiter nicht gefunden.");
+            return new SchichtValidationResult
+            {
+                Success = false,
+                Message = "Mitarbeiter nicht gefunden."
+            };
         }
 
         if (!mitarbeiter.Aktiv)
         {
-            return (false, "Mitarbeiter ist inaktiv.");
+            return new SchichtValidationResult
+            {
+                Success = false,
+                Message = "Mitarbeiter ist inaktiv."
+            };
         }
 
         if (mitarbeiter.NurSamstag && schicht.Datum.DayOfWeek != DayOfWeek.Saturday)
         {
-            return (false, "Dieser Mitarbeiter darf nur samstags arbeiten.");
+            return new SchichtValidationResult
+            {
+                Success = false,
+                Message = "Dieser Mitarbeiter darf nur samstags arbeiten."
+            };
         }
 
         var overlapQuery = _db.Schichten.Where(s =>
@@ -55,7 +74,11 @@ public class SchichtService : ISchichtService
 
         if (hasOverlap)
         {
-            return (false, "Der Mitarbeiter hat bereits eine überschneidende Schicht an diesem Tag.");
+            return new SchichtValidationResult
+            {
+                Success = false,
+                Message = "Der Mitarbeiter hat bereits eine überschneidende Schicht an diesem Tag."
+            };
         }
 
         var monatsstunden = await GetMonatsstundenAsync(
@@ -68,16 +91,32 @@ public class SchichtService : ISchichtService
 
         if (neueGesamtstunden > mitarbeiter.MaxStundenProMonat)
         {
-            return (
-                false,
-                $"Maximale Monatsarbeitszeit überschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h"
-            );
+            var message =
+                $"Maximale Monatsarbeitszeit überschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h";
+
+            if (!allowMaxHoursOverride)
+            {
+                return new SchichtValidationResult
+                {
+                    Success = false,
+                    Message = message,
+                    RequiresConfirmation = true
+                };
+            }
         }
 
-        return (true, "OK");
+        return new SchichtValidationResult
+        {
+            Success = true,
+            Message = "OK"
+        };
     }
 
-    public async Task<decimal> GetMonatsstundenAsync(int mitarbeiterId, int jahr, int monat, int? excludeSchichtId = null)
+    public async Task<decimal> GetMonatsstundenAsync(
+        int mitarbeiterId,
+        int jahr,
+        int monat,
+        int? excludeSchichtId = null)
     {
         var monthStart = new DateOnly(jahr, monat, 1);
         var monthEnd = monthStart.AddMonths(1);

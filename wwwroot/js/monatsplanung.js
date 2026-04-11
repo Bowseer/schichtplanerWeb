@@ -60,27 +60,47 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!raw) return;
 
             const dragged = JSON.parse(raw);
+
             const request = {
                 standortId: Number(zone.dataset.standortId),
                 mitarbeiterId: Number(dragged.mitarbeiterId),
                 datum: zone.dataset.datum,
-                slot: Number(zone.dataset.slot)
+                slot: Number(zone.dataset.slot),
+                forceMaxHoursOverride: false
             };
 
-            try {
+            const saveDrop = async (payload) => {
                 const response = await fetch("/Monatsplanung/AssignSlot", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "RequestVerificationToken": tokenInput ? tokenInput.value : ""
                     },
-                    body: JSON.stringify(request)
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
+                return { response, data };
+            };
 
-                if (!response.ok || !data.success) {
-                    showStatus(data.message || "Speichern fehlgeschlagen.", true);
+            try {
+                let result = await saveDrop(request);
+
+                if (!result.response.ok && result.data?.requiresConfirmation) {
+                    const confirmed = window.confirm(
+                        `${result.data.message}\n\nTrotzdem einplanen?`
+                    );
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    request.forceMaxHoursOverride = true;
+                    result = await saveDrop(request);
+                }
+
+                if (!result.response.ok || !result.data.success) {
+                    showStatus(result.data?.message || "Speichern fehlgeschlagen.", true);
                     return;
                 }
 
@@ -91,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    document.querySelectorAll(".slot-edit-toggle").forEach((button) => {
+    document.querySelectorAll(".day-edit-toggle").forEach((button) => {
         button.addEventListener("click", () => {
             const targetId = button.dataset.target;
             const panel = document.getElementById(targetId);
@@ -100,20 +120,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    document.querySelectorAll(".save-slot-time").forEach((button) => {
+    document.querySelectorAll(".save-standard-slot-time").forEach((button) => {
         button.addEventListener("click", async () => {
-            const panel = button.closest(".slot-edit-panel");
-            if (!panel) return;
-
-            const beginn = panel.querySelector(".slot-beginn")?.value;
-            const ende = panel.querySelector(".slot-ende")?.value;
+            const slot = button.dataset.slot;
+            const beginn = document.querySelector(`.standard-slot-beginn[data-slot="${slot}"]`)?.value;
+            const ende = document.querySelector(`.standard-slot-ende[data-slot="${slot}"]`)?.value;
 
             const request = {
                 standortId: Number(button.dataset.standortId),
-                datum: button.dataset.scope === "day" ? button.dataset.datum : null,
-                slot: Number(button.dataset.slot),
-                beginn: beginn,
-                ende: ende
+                datum: null,
+                slot: Number(slot),
+                beginn,
+                ende
             };
 
             try {
@@ -129,13 +147,53 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    showStatus(data.message || "Zeit konnte nicht gespeichert werden.", true);
+                    showStatus(data.message || "Standardzeit konnte nicht gespeichert werden.", true);
                     return;
                 }
 
                 window.location.reload();
             } catch {
-                showStatus("Zeit konnte nicht gespeichert werden.", true);
+                showStatus("Standardzeit konnte nicht gespeichert werden.", true);
+            }
+        });
+    });
+
+    document.querySelectorAll(".save-day-slot-time").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const row = button.closest(".day-edit-slot-row");
+            if (!row) return;
+
+            const beginn = row.querySelector(".day-slot-beginn")?.value;
+            const ende = row.querySelector(".day-slot-ende")?.value;
+
+            const request = {
+                standortId: Number(button.dataset.standortId),
+                datum: button.dataset.datum,
+                slot: Number(button.dataset.slot),
+                beginn,
+                ende
+            };
+
+            try {
+                const response = await fetch("/Monatsplanung/SaveSlotTime", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showStatus(data.message || "Tageszeit konnte nicht gespeichert werden.", true);
+                    return;
+                }
+
+                window.location.reload();
+            } catch {
+                showStatus("Tageszeit konnte nicht gespeichert werden.", true);
             }
         });
     });
