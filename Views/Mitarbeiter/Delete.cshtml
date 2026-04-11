@@ -1,5 +1,5 @@
-@model Mitarbeiter
-@{ ViewData["Title"] = "Mitarbeiter löschen"; }
-<h1>Mitarbeiter löschen</h1>
-<p>Möchtest du <strong>@Model.VollerName</strong> wirklich löschen?</p>
-<form asp-action="Delete" method="post"><input asp-for="Id" type="hidden" /><button type="submit" class="btn btn-danger">Löschen</button> <a asp-action="Index" class="btn btn-secondary">Abbrechen</a></form>
+﻿@model Mitarbeiter
+@{ ViewData["Title"] = "Mitarbeiter lÃ¶schen"; }
+<h1>Mitarbeiter lÃ¶schen</h1>
+<p>MÃ¶chtest du <strong>@Model.VollerName</strong> wirklich lÃ¶schen?</p>
+<form asp-action="Delete" method="post"><input asp-for="Id" type="hidden" /><button type="submit" class="btn btn-danger">LÃ¶schen</button> <a asp-action="Index" class="btn btn-secondary">Abbrechen</a></form>

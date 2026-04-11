@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -98,7 +98,7 @@ public class AdminController : Controller
         else
         {
             await _userManager.AddToRoleAsync(user, "Admin");
-            TempData["Success"] = "Benutzer zum Admin befördert.";
+            TempData["Success"] = "Benutzer zum Admin befÃ¶rdert.";
         }
 
         return RedirectToAction(nameof(Users));
@@ -151,7 +151,7 @@ public class AdminController : Controller
         user.MustChangePassword = true;
         await _userManager.UpdateAsync(user);
 
-        TempData["Success"] = "Passwort wurde zurückgesetzt. Benutzer muss es beim nächsten Login ändern.";
+        TempData["Success"] = "Passwort wurde zurÃ¼ckgesetzt. Benutzer muss es beim nÃ¤chsten Login Ã¤ndern.";
         return RedirectToAction(nameof(Users));
     }
 

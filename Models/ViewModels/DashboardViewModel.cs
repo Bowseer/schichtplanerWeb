@@ -1,4 +1,4 @@
-namespace Schichtplaner.Models.ViewModels;
+﻿namespace Schichtplaner.Models.ViewModels;
 
 public class DashboardViewModel
 {

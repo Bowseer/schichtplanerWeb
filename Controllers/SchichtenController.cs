@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -79,9 +79,9 @@ public class SchichtenController : Controller
     {
         return slot switch
         {
-            1 => "Früh",
+            1 => "FrÃ¼h",
             2 => "Flex",
-            3 => "Spät",
+            3 => "SpÃ¤t",
             _ => "?"
         };
     }

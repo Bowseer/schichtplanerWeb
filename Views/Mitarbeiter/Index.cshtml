@@ -1,4 +1,4 @@
-@model IEnumerable<Mitarbeiter>
+﻿@model IEnumerable<Mitarbeiter>
 @{
     ViewData["Title"] = "Mitarbeiter";
     var selectedStandortId = Context.Request.Query["standortId"].ToString();
@@ -45,7 +45,7 @@
                 <td>@(item.Aktiv ? "Ja" : "Nein")</td>
                 <td class="text-end">
                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-secondary">Bearbeiten</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Löschen</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">LÃ¶schen</a>
                 </td>
             </tr>
         }

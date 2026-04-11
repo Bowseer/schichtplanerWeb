@@ -1,4 +1,4 @@
-@model IEnumerable<Schicht>
+﻿@model IEnumerable<Schicht>
 
 @{
     ViewData["Title"] = "Schichten";
@@ -58,9 +58,9 @@
                 <td>@s.Datum.ToString("dd.MM.yyyy")</td>
                 <td>
                     @(
-                        s.Slot == 1 ? "Früh" :
+                        s.Slot == 1 ? "FrÃ¼h" :
                         s.Slot == 2 ? "Flex" :
-                        s.Slot == 3 ? "Spät" : "?"
+                        s.Slot == 3 ? "SpÃ¤t" : "?"
                     )
                 </td>
                 <td>@s.Mitarbeiter?.VollerName</td>

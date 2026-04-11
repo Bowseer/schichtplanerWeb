@@ -1,4 +1,4 @@
-using Schichtplaner.Models;
+ï»¿using Schichtplaner.Models;
 
 namespace Schichtplaner.Services;
 
@@ -21,7 +21,7 @@ public class FeiertagService : IFeiertagService
 
         if (bundesland is Bundesland.BadenWuerttemberg or Bundesland.Bayern or Bundesland.SachsenAnhalt)
         {
-            Add(feiertage, new DateOnly(year, 1, 6), "Heilige Drei Könige");
+            Add(feiertage, new DateOnly(year, 1, 6), "Heilige Drei KÃ¶nige");
         }
 
         if (bundesland is Bundesland.BadenWuerttemberg or Bundesland.Bayern or Bundesland.Hessen
@@ -50,7 +50,7 @@ public class FeiertagService : IFeiertagService
 
         if (bundesland == Bundesland.Sachsen)
         {
-            Add(feiertage, GetBussUndBettag(year), "Buß- und Bettag");
+            Add(feiertage, GetBussUndBettag(year), "BuÃŸ- und Bettag");
         }
 
         if (bundesland == Bundesland.Thueringen)

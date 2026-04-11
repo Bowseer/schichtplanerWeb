@@ -1,4 +1,4 @@
-namespace Schichtplaner.Models;
+﻿namespace Schichtplaner.Models;
 
 public enum EmploymentType
 {

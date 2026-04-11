@@ -1,6 +1,6 @@
-@model Schicht
-@{ ViewData["Title"] = "Schicht löschen"; }
-<h1>Schicht löschen</h1>
-<p>Möchtest du diese Schicht wirklich löschen?</p>
+﻿@model Schicht
+@{ ViewData["Title"] = "Schicht lÃ¶schen"; }
+<h1>Schicht lÃ¶schen</h1>
+<p>MÃ¶chtest du diese Schicht wirklich lÃ¶schen?</p>
 <ul><li><strong>Datum:</strong> @Model.Datum.ToString("dd.MM.yyyy")</li><li><strong>Mitarbeiter:</strong> @Model.Mitarbeiter?.VollerName</li><li><strong>Standort:</strong> @Model.Standort?.Name</li><li><strong>Zeitraum:</strong> @Model.Beginn - @Model.Ende</li></ul>
-<form asp-action="Delete" method="post"><input asp-for="Id" type="hidden" /><button type="submit" class="btn btn-danger">Löschen</button> <a asp-action="Index" class="btn btn-secondary">Abbrechen</a></form>
+<form asp-action="Delete" method="post"><input asp-for="Id" type="hidden" /><button type="submit" class="btn btn-danger">LÃ¶schen</button> <a asp-action="Index" class="btn btn-secondary">Abbrechen</a></form>

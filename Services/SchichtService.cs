@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Schichtplaner.Data;
 using Schichtplaner.Models;
 
@@ -77,7 +77,7 @@ public class SchichtService : ISchichtService
             return new SchichtValidationResult
             {
                 Success = false,
-                Message = "Der Mitarbeiter hat bereits eine überschneidende Schicht an diesem Tag."
+                Message = "Der Mitarbeiter hat bereits eine Ã¼berschneidende Schicht an diesem Tag."
             };
         }
 
@@ -92,7 +92,7 @@ public class SchichtService : ISchichtService
         if (neueGesamtstunden > mitarbeiter.MaxStundenProMonat)
         {
             var message =
-                $"Maximale Monatsarbeitszeit überschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h";
+                $"Maximale Monatsarbeitszeit Ã¼berschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h";
 
             if (!allowMaxHoursOverride)
             {
