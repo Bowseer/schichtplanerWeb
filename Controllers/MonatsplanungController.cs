@@ -18,6 +18,7 @@ public class MonatsplanungController : Controller
 
     public async Task<IActionResult> Index(int? jahr, int? monat)
     {
+        throw new Exception("NEUER CODE AKTIV");
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var targetYear = jahr ?? today.Year;
