@@ -13,11 +13,16 @@ public class MonatsplanungController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly ISchichtService _schichtService;
+    private readonly IFeiertagService _feiertagService;
 
-    public MonatsplanungController(ApplicationDbContext db, ISchichtService schichtService)
+    public MonatsplanungController(
+        ApplicationDbContext db,
+        ISchichtService schichtService,
+        IFeiertagService feiertagService)
     {
         _db = db;
         _schichtService = schichtService;
+        _feiertagService = feiertagService;
     }
 
     public async Task<IActionResult> Index(int? jahr, int? monat, int? standortId)
@@ -64,6 +69,8 @@ public class MonatsplanungController : Controller
                 Farbe = GetColorForIndex(index)
             })
             .ToDictionary(x => x.MitarbeiterId, x => x.Farbe);
+
+        var feiertage = _feiertagService.GetFeiertage(targetYear, standort.Bundesland);
 
         var model = new MonatsplanViewModel
         {
@@ -139,12 +146,14 @@ public class MonatsplanungController : Controller
             {
                 var currentDate = kalenderStart.AddDays(wocheIndex * 7 + tagIndex);
 
+                feiertage.TryGetValue(currentDate, out var feiertagName);
+
                 var tag = new KalenderTagDto
                 {
                     Datum = currentDate,
                     IstSonntag = currentDate.DayOfWeek == DayOfWeek.Sunday,
-                    IstFeiertag = false,
-                    FeiertagName = null
+                    IstFeiertag = feiertagName != null,
+                    FeiertagName = feiertagName
                 };
 
                 for (int slot = 1; slot <= 3; slot++)
@@ -230,6 +239,8 @@ public class MonatsplanungController : Controller
                 s.Datum == datum &&
                 s.Slot == request.Slot);
 
+        int? oldMitarbeiterId = bestehendeSlotSchicht?.MitarbeiterId;
+
         if (bestehendeSlotSchicht == null)
         {
             var neueSchicht = new Schicht
@@ -297,7 +308,76 @@ public class MonatsplanungController : Controller
 
         await _db.SaveChangesAsync();
 
-        return Ok(new { success = true });
+        var changedEmployeeIds = new List<int> { request.MitarbeiterId };
+        if (oldMitarbeiterId.HasValue && oldMitarbeiterId.Value != request.MitarbeiterId)
+        {
+            changedEmployeeIds.Add(oldMitarbeiterId.Value);
+        }
+
+        var employeeRest = await BuildEmployeeRestMap(request.StandortId, datum.Year, datum.Month, changedEmployeeIds);
+
+        return Ok(new
+        {
+            success = true,
+            slot = new
+            {
+                standortId = request.StandortId,
+                datum = datum.ToString("yyyy-MM-dd"),
+                slot = request.Slot,
+                mitarbeiterId = request.MitarbeiterId,
+                mitarbeiterName = mitarbeiter.VollerName,
+                farbe = await GetEmployeeColor(request.StandortId, request.MitarbeiterId)
+            },
+            employeeRest
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Planer")]
+    public async Task<IActionResult> RemoveSlot([FromBody] RemoveSlotRequest request)
+    {
+        if (request.StandortId <= 0 || request.Slot is < 1 or > 3)
+        {
+            return BadRequest(new { success = false, message = "Ungültige Daten." });
+        }
+
+        if (!DateOnly.TryParse(request.Datum, out var datum))
+        {
+            return BadRequest(new { success = false, message = "Ungültiges Datum." });
+        }
+
+        var schicht = await _db.Schichten.FirstOrDefaultAsync(s =>
+            s.StandortId == request.StandortId &&
+            s.Datum == datum &&
+            s.Slot == request.Slot);
+
+        if (schicht == null)
+        {
+            return Ok(new { success = true });
+        }
+
+        var mitarbeiterId = schicht.MitarbeiterId;
+
+        _db.Schichten.Remove(schicht);
+        await _db.SaveChangesAsync();
+
+        var employeeRest = await BuildEmployeeRestMap(request.StandortId, datum.Year, datum.Month, new List<int> { mitarbeiterId });
+
+        return Ok(new
+        {
+            success = true,
+            slot = new
+            {
+                standortId = request.StandortId,
+                datum = datum.ToString("yyyy-MM-dd"),
+                slot = request.Slot,
+                mitarbeiterId = (int?)null,
+                mitarbeiterName = (string?)null,
+                farbe = (string?)null
+            },
+            employeeRest
+        });
     }
 
     [HttpPost]
@@ -377,6 +457,41 @@ public class MonatsplanungController : Controller
         return Ok(new { success = true });
     }
 
+    private async Task<Dictionary<string, decimal>> BuildEmployeeRestMap(int standortId, int jahr, int monat, List<int> employeeIds)
+    {
+        var employees = await _db.Mitarbeiter
+            .Where(m => m.StandortId == standortId && employeeIds.Contains(m.Id))
+            .ToListAsync();
+
+        var result = new Dictionary<string, decimal>();
+
+        foreach (var employee in employees)
+        {
+            var stunden = await _schichtService.GetMonatsstundenAsync(employee.Id, jahr, monat);
+            result[employee.Id.ToString()] = employee.MaxStundenProMonat - stunden;
+        }
+
+        return result;
+    }
+
+    private async Task<string> GetEmployeeColor(int standortId, int mitarbeiterId)
+    {
+        var mitarbeiterIds = await _db.Mitarbeiter
+            .Where(m => m.StandortId == standortId && m.Aktiv)
+            .OrderBy(m => m.Nachname)
+            .ThenBy(m => m.Vorname)
+            .Select(m => m.Id)
+            .ToListAsync();
+
+        var index = mitarbeiterIds.FindIndex(id => id == mitarbeiterId);
+        if (index < 0)
+        {
+            index = 0;
+        }
+
+        return GetColorForIndex(index);
+    }
+
     private static string GetSlotName(int slot)
     {
         return slot switch
@@ -449,6 +564,13 @@ public class AssignSlotRequest
     public string Datum { get; set; } = string.Empty;
     public int Slot { get; set; }
     public bool ForceMaxHoursOverride { get; set; }
+}
+
+public class RemoveSlotRequest
+{
+    public int StandortId { get; set; }
+    public string Datum { get; set; } = string.Empty;
+    public int Slot { get; set; }
 }
 
 public class SaveSlotTimeRequest

@@ -73,9 +73,10 @@
                  data-mitarbeiter-id="@m.Id"
                  data-mitarbeiter-name="@m.Name"
                  data-color="@m.Farbe"
+                 data-rest-target="employee-rest-@m.Id"
                  style="border-left: 8px solid @m.Farbe;">
                 <div class="mitarbeiter-name">@m.Name</div>
-                <div class="mitarbeiter-rest">Rest: @m.Reststunden h</div>
+                <div class="mitarbeiter-rest" id="employee-rest-@m.Id">Rest: @m.Reststunden h</div>
             </div>
         }
     </div>
@@ -171,7 +172,15 @@
                                     {
                                         <div class="slot-belegung compact-slot-belegung"
                                              style="background:@slot.Farbe;">
-                                            @slot.MitarbeiterName
+                                            <span class="slot-belegung-name">@slot.MitarbeiterName</span>
+                                            <button type="button"
+                                                    class="remove-slot icon-button"
+                                                    data-standort-id="@Model.StandortId"
+                                                    data-datum="@tag.Datum.ToString("yyyy-MM-dd")"
+                                                    data-slot="@slot.Slot"
+                                                    title="Belegung entfernen">
+                                                ×
+                                            </button>
                                         </div>
                                     }
                                 </div>

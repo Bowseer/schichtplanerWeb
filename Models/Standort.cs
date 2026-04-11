@@ -13,6 +13,8 @@ public class Standort
     [StringLength(255)]
     public string? Adresse { get; set; }
 
+    public Bundesland Bundesland { get; set; } = Bundesland.Berlin;
+
     public TimeSpan FruehBeginn { get; set; } = new(8, 0, 0);
     public TimeSpan FruehEnde { get; set; } = new(12, 0, 0);
 

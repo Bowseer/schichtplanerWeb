@@ -25,6 +25,64 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    const antiforgery = () => ({
+        "Content-Type": "application/json",
+        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
+    });
+
+    const updateEmployeeRest = (employeeRest) => {
+        if (!employeeRest) return;
+
+        Object.entries(employeeRest).forEach(([employeeId, rest]) => {
+            const target = document.getElementById(`employee-rest-${employeeId}`);
+            if (target) {
+                target.textContent = `Rest: ${rest} h`;
+            }
+        });
+    };
+
+    const updateSlotDom = (slotData) => {
+        if (!slotData) return;
+
+        const zone = document.querySelector(
+            `.slot-dropzone[data-standort-id="${slotData.standortId}"][data-datum="${slotData.datum}"][data-slot="${slotData.slot}"]`
+        );
+
+        if (!zone) return;
+
+        const existing = zone.querySelector(".slot-belegung");
+        if (existing) {
+            existing.remove();
+        }
+
+        if (!slotData.mitarbeiterName) {
+            return;
+        }
+
+        const belegung = document.createElement("div");
+        belegung.className = "slot-belegung compact-slot-belegung";
+        belegung.style.background = slotData.farbe ?? "";
+
+        const name = document.createElement("span");
+        name.className = "slot-belegung-name";
+        name.textContent = slotData.mitarbeiterName;
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "remove-slot icon-button";
+        removeButton.dataset.standortId = slotData.standortId;
+        removeButton.dataset.datum = slotData.datum;
+        removeButton.dataset.slot = slotData.slot;
+        removeButton.title = "Belegung entfernen";
+        removeButton.textContent = "×";
+
+        belegung.appendChild(name);
+        belegung.appendChild(removeButton);
+        zone.appendChild(belegung);
+
+        bindRemoveButton(removeButton);
+    };
+
     if (standort) standort.addEventListener("change", submitFilter);
     if (jahr) jahr.addEventListener("change", submitFilter);
     if (monat) monat.addEventListener("change", submitFilter);
@@ -72,10 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const saveDrop = async (payload) => {
                 const response = await fetch("/Monatsplanung/AssignSlot", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
-                    },
+                    headers: antiforgery(),
                     body: JSON.stringify(payload)
                 });
 
@@ -104,7 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                window.location.reload();
+                updateSlotDom(result.data.slot);
+                updateEmployeeRest(result.data.employeeRest);
+                showStatus("Belegung gespeichert.");
             } catch {
                 showStatus("Speichern fehlgeschlagen.", true);
             }
@@ -137,10 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const response = await fetch("/Monatsplanung/SaveSlotTime", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
-                    },
+                    headers: antiforgery(),
                     body: JSON.stringify(request)
                 });
 
@@ -177,10 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const response = await fetch("/Monatsplanung/SaveSlotTime", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "RequestVerificationToken": tokenInput ? tokenInput.value : ""
-                    },
+                    headers: antiforgery(),
                     body: JSON.stringify(request)
                 });
 
@@ -197,4 +248,37 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+
+    const bindRemoveButton = (button) => {
+        button.addEventListener("click", async () => {
+            const request = {
+                standortId: Number(button.dataset.standortId),
+                datum: button.dataset.datum,
+                slot: Number(button.dataset.slot)
+            };
+
+            try {
+                const response = await fetch("/Monatsplanung/RemoveSlot", {
+                    method: "POST",
+                    headers: antiforgery(),
+                    body: JSON.stringify(request)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showStatus(data.message || "Belegung konnte nicht entfernt werden.", true);
+                    return;
+                }
+
+                updateSlotDom(data.slot);
+                updateEmployeeRest(data.employeeRest);
+                showStatus("Belegung entfernt.");
+            } catch {
+                showStatus("Belegung konnte nicht entfernt werden.", true);
+            }
+        });
+    };
+
+    document.querySelectorAll(".remove-slot").forEach(bindRemoveButton);
 });
