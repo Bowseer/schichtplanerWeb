@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Schichtplaner.Data;
 using Schichtplaner.Models;
+using Schichtplaner.Models.ViewModels;
 using Schichtplaner.Services;
 
 namespace Schichtplaner.Controllers;
