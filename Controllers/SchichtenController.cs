@@ -33,7 +33,7 @@ public class SchichtenController : Controller
     {
         var vm = new SchichtCreateViewModel
         {
-            Datum = DateOnly.FromDateTime(DateTime.Today),
+            Datum = DateTime.Today,
             Beginn = new TimeSpan(9, 0, 0),
             Ende = new TimeSpan(17, 0, 0)
         };
@@ -56,7 +56,7 @@ public class SchichtenController : Controller
         {
             MitarbeiterId = vm.MitarbeiterId,
             StandortId = vm.StandortId,
-            Datum = vm.Datum,
+            Datum = vm.Datum.Date,
             Beginn = vm.Beginn,
             Ende = vm.Ende,
             PauseMinuten = vm.PauseMinuten
@@ -113,7 +113,7 @@ public class SchichtenController : Controller
 
         entity.MitarbeiterId = vm.MitarbeiterId;
         entity.StandortId = vm.StandortId;
-        entity.Datum = vm.Datum;
+        entity.Datum = vm.Datum.Date;
         entity.Beginn = vm.Beginn;
         entity.Ende = vm.Ende;
         entity.PauseMinuten = vm.PauseMinuten;

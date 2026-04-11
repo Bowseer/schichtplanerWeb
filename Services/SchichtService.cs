@@ -20,10 +20,7 @@ public class SchichtService : ISchichtService
             return (false, "Das Schichtende muss nach dem Beginn liegen.");
         }
 
-        var mitarbeiter = await _db.Mitarbeiter
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == schicht.MitarbeiterId);
-
+        var mitarbeiter = await _db.Mitarbeiter.AsNoTracking().FirstOrDefaultAsync(m => m.Id == schicht.MitarbeiterId);
         if (mitarbeiter == null)
         {
             return (false, "Mitarbeiter nicht gefunden.");
@@ -34,45 +31,30 @@ public class SchichtService : ISchichtService
             return (false, "Mitarbeiter ist inaktiv.");
         }
 
-        var schichtDatum = schicht.Datum;
-
-        if (mitarbeiter.NurSamstag &&
-            schichtDatum.ToDateTime(TimeOnly.MinValue).DayOfWeek != DayOfWeek.Saturday)
+        if (mitarbeiter.NurSamstag && schicht.Datum.DayOfWeek != DayOfWeek.Saturday)
         {
             return (false, "Dieser Mitarbeiter darf nur samstags arbeiten.");
         }
 
-        var overlapQuery = _db.Schichten.Where(s =>
-            s.MitarbeiterId == schicht.MitarbeiterId &&
-            s.Datum == schichtDatum);
-
+        var schichtDatum = schicht.Datum.Date;
+        var overlapQuery = _db.Schichten.Where(s => s.MitarbeiterId == schicht.MitarbeiterId && s.Datum == schichtDatum);
         if (excludeSchichtId.HasValue)
         {
             overlapQuery = overlapQuery.Where(s => s.Id != excludeSchichtId.Value);
         }
 
         var sameDayShifts = await overlapQuery.ToListAsync();
-
-        var hasOverlap = sameDayShifts.Any(existing =>
-            schicht.Beginn < existing.Ende && schicht.Ende > existing.Beginn);
-
+        var hasOverlap = sameDayShifts.Any(existing => schicht.Beginn < existing.Ende && schicht.Ende > existing.Beginn);
         if (hasOverlap)
         {
             return (false, "Der Mitarbeiter hat bereits eine überschneidende Schicht an diesem Tag.");
         }
 
-        var monatsstunden = await GetMonatsstundenAsync(
-            schicht.MitarbeiterId,
-            schichtDatum.Year,
-            schichtDatum.Month,
-            excludeSchichtId);
-
+        var monatsstunden = await GetMonatsstundenAsync(schicht.MitarbeiterId, schicht.Datum.Year, schicht.Datum.Month, excludeSchichtId);
         var neueGesamtstunden = monatsstunden + schicht.Stunden;
-
         if (neueGesamtstunden > mitarbeiter.MaxStundenProMonat)
         {
-            return (false,
-                $"Maximale Monatsarbeitszeit überschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h");
+            return (false, $"Maximale Monatsarbeitszeit überschritten. Geplant: {neueGesamtstunden:F2} h / Erlaubt: {mitarbeiter.MaxStundenProMonat:F2} h");
         }
 
         return (true, "OK");
@@ -80,14 +62,10 @@ public class SchichtService : ISchichtService
 
     public async Task<decimal> GetMonatsstundenAsync(int mitarbeiterId, int jahr, int monat, int? excludeSchichtId = null)
     {
-        var monthStart = new DateOnly(jahr, monat, 1);
+        var monthStart = new DateTime(jahr, monat, 1).Date;
         var monthEnd = monthStart.AddMonths(1);
 
-        var query = _db.Schichten.Where(s =>
-            s.MitarbeiterId == mitarbeiterId &&
-            s.Datum >= monthStart &&
-            s.Datum < monthEnd);
-
+        var query = _db.Schichten.Where(s => s.MitarbeiterId == mitarbeiterId && s.Datum >= monthStart && s.Datum < monthEnd);
         if (excludeSchichtId.HasValue)
         {
             query = query.Where(s => s.Id != excludeSchichtId.Value);

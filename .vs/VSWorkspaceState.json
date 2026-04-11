@@ -1,7 +1,12 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Controllers",
+    "\\Data",
+    "\\Models",
+    "\\Models\\ViewModels",
+    "\\Services"
   ],
-  "SelectedNode": "\\C:\\Development\\schichtplanerWeb",
+  "SelectedNode": "\\Services\\SchichtService.cs",
   "PreviewInSolutionExplorer": false
 }

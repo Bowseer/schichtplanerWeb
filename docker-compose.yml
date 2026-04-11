@@ -1,4 +1,22 @@
 services:
+  schichtplaner-web:
+    build: .
+    container_name: schichtplaner-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=schichtplaner;Username=schichtplaner;Password=SehrSicheresPasswort123
+      SeedAdmin__Email: admin@example.local
+      SeedAdmin__Password: Admin1234
+      UseHttpsRedirection: "false"
+      DataProtection__KeysPath: /app/keys
+    volumes:
+      - schichtplaner_keys:/app/keys
+    depends_on:
+      - schichtplaner-db
+
   schichtplaner-db:
     image: postgres:16
     container_name: schichtplaner-db
@@ -6,28 +24,10 @@ services:
     environment:
       POSTGRES_DB: schichtplaner
       POSTGRES_USER: schichtplaner
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: SehrSicheresPasswort123
     volumes:
-      - /mnt/Apps_Virtualization/compose/schichtplaner/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U schichtplaner -d schichtplaner"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
+      - postgres_data:/var/lib/postgresql/data
 
-  schichtplaner-web:
-    build: .
-    container_name: schichtplaner-web
-    restart: unless-stopped
-    ports:
-      - "8090:8080"
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=schichtplaner;Username=schichtplaner;Password=${DB_PASSWORD}
-      SeedAdmin__Email: ${ADMIN_EMAIL}
-      SeedAdmin__Password: ${ADMIN_PASSWORD}
-    depends_on:
-      schichtplaner-db:
-        condition: service_healthy
+volumes:
+  postgres_data:
+  schichtplaner_keys:

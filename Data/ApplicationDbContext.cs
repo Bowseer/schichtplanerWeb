@@ -6,8 +6,7 @@ namespace Schichtplaner.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
 
@@ -40,13 +39,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Schicht>()
             .Property(s => s.Datum)
             .HasColumnType("date");
-
-        builder.Entity<Schicht>()
-            .Property(s => s.Beginn)
-            .HasColumnType("time");
-
-        builder.Entity<Schicht>()
-            .Property(s => s.Ende)
-            .HasColumnType("time");
     }
 }

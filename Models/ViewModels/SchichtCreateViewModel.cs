@@ -13,7 +13,7 @@ public class SchichtCreateViewModel
 
     [Required]
     [DataType(DataType.Date)]
-    public DateOnly Datum { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    public DateTime Datum { get; set; } = DateTime.Today;
 
     [Required]
     public TimeSpan Beginn { get; set; }

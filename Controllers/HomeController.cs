@@ -19,7 +19,7 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         var now = DateTime.Today;
-        var monthStart = new DateTime(now.Year, now.Month, 1);
+        var monthStart = new DateTime(now.Year, now.Month, 1).Date;
         var monthEnd = monthStart.AddMonths(1);
 
         var model = new DashboardViewModel
