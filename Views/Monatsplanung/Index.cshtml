@@ -12,6 +12,16 @@
         <h1>@(new DateTime(Model.Jahr, Model.Monat, 1).ToString("MMMM yyyy", new System.Globalization.CultureInfo("de-DE")))</h1>
         <p>Mitarbeitende per Drag &amp; Drop auf freie Schichten ziehen.</p>
     </div>
+    @if (Model.StandortId.HasValue)
+    {
+        <a class="btn btn-outline-primary"
+           asp-action="ExportPdf"
+           asp-route-jahr="@Model.Jahr"
+           asp-route-monat="@Model.Monat"
+           asp-route-standortId="@Model.StandortId">
+            PDF herunterladen
+        </a>
+    }
 </div>
 
 <form id="filterForm" method="get" class="planung-toolbar">

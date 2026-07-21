@@ -16,21 +16,45 @@ public class MonatsplanungController : Controller
     private readonly ApplicationDbContext _db;
     private readonly ISchichtService _schichtService;
     private readonly IFeiertagService _feiertagService;
+    private readonly IMonatsplanPdfService _pdfService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public MonatsplanungController(
         ApplicationDbContext db,
         ISchichtService schichtService,
         IFeiertagService feiertagService,
+        IMonatsplanPdfService pdfService,
         UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _schichtService = schichtService;
         _feiertagService = feiertagService;
+        _pdfService = pdfService;
         _userManager = userManager;
     }
 
     public async Task<IActionResult> Index(int? jahr, int? monat, int? standortId)
+    {
+        var model = await LoadMonatsplanAsync(jahr, monat, standortId);
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(int? jahr, int? monat, int? standortId)
+    {
+        var model = await LoadMonatsplanAsync(jahr, monat, standortId);
+        if (model.StandortId == null)
+            return BadRequest("Für den PDF-Export muss ein Standort vorhanden sein.");
+
+        var standortName = model.Standorte.FirstOrDefault(s => s.Id == model.StandortId)?.Name ?? "Standort";
+        var pdf = _pdfService.Create(model, standortName);
+        var safeStandort = string.Concat(standortName.Select(character => char.IsLetterOrDigit(character) ? character : '-'));
+        var fileName = $"Schichtplan-{model.Jahr}-{model.Monat:00}-{safeStandort}.pdf";
+
+        return File(pdf, "application/pdf", fileName);
+    }
+
+    private async Task<MonatsplanViewModel> LoadMonatsplanAsync(int? jahr, int? monat, int? standortId)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
 
@@ -52,11 +76,11 @@ public class MonatsplanungController : Controller
 
         if (selectedStandortId == null)
         {
-            return View(new MonatsplanViewModel
+            return new MonatsplanViewModel
             {
                 Jahr = targetYear,
                 Monat = targetMonth
-            });
+            };
         }
 
         var standort = await _db.Standorte
@@ -97,7 +121,7 @@ public class MonatsplanungController : Controller
             feiertage,
             colorMap);
 
-        return View(model);
+        return model;
     }
 
     [HttpPost]

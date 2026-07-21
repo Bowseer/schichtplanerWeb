@@ -54,6 +54,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 builder.Services.AddScoped<ISchichtService, SchichtService>();
+builder.Services.AddSingleton<IMonatsplanPdfService, MonatsplanPdfService>();
 
 var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
 Directory.CreateDirectory(dataProtectionPath);
