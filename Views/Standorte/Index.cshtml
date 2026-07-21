@@ -23,10 +23,10 @@
             <tr>
                 <td>@item.Name</td>
                 <td>@item.Adresse</td>
-                <td>@item.Bundesland</td>
+                <td>@Html.DisplayFor(_ => item.Bundesland)</td>
                 <td class="text-end">
                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-secondary">Bearbeiten</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">LÃ¶schen</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Löschen</a>
                 </td>
             </tr>
         }
