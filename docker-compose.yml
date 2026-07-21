@@ -7,24 +7,30 @@ services:
       - "8090:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=schichtplaner;Username=schichtplaner;Password=SehrSicheresPasswort123
-      SeedAdmin__Email: admin@example.local
-      SeedAdmin__Password: Admin1234
+      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=${POSTGRES_DB:-schichtplaner};Username=${POSTGRES_USER:-schichtplaner};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD muss gesetzt sein}
+      SeedAdmin__Email: ${SEED_ADMIN_EMAIL:?SEED_ADMIN_EMAIL muss gesetzt sein}
+      SeedAdmin__Password: ${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD muss gesetzt sein}
       UseHttpsRedirection: "false"
       DataProtection__KeysPath: /app/keys
     volumes:
       - schichtplaner_keys:/app/keys
     depends_on:
-      - schichtplaner-db
+      schichtplaner-db:
+        condition: service_healthy
 
   schichtplaner-db:
     image: postgres:16
     container_name: schichtplaner-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: schichtplaner
-      POSTGRES_USER: schichtplaner
-      POSTGRES_PASSWORD: SehrSicheresPasswort123
+      POSTGRES_DB: ${POSTGRES_DB:-schichtplaner}
+      POSTGRES_USER: ${POSTGRES_USER:-schichtplaner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD muss gesetzt sein}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

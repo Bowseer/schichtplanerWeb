@@ -1,6 +1,21 @@
-body {
-    background-color: #f8f9fa;
-}
+:root { --ink:#172033; --muted:#65708a; --surface:#fff; --canvas:#f3f6fb; --line:#dfe5ef; --brand:#5b5bd6; --brand-dark:#4545b8; }
+body { background:var(--canvas); color:var(--ink); min-height:100vh; }
+.app-navbar { background:linear-gradient(110deg,#171b2e,#292957); box-shadow:0 6px 22px rgba(23,27,46,.16); }
+.navbar-brand { display:flex; align-items:center; gap:.65rem; font-weight:750; letter-spacing:-.02em; }
+.brand-mark { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:.65rem; color:#fff; background:linear-gradient(135deg,#7777ef,#4cc9b0); font-weight:800; box-shadow:0 5px 14px rgba(91,91,214,.35); }
+.brand-mark-lg { width:3.2rem; height:3.2rem; border-radius:1rem; font-size:1.35rem; }
+.app-content { padding:2rem clamp(1rem,2.5vw,2.75rem) 3rem; }
+.page-heading { display:flex; justify-content:space-between; align-items:end; margin-bottom:1.25rem; }
+.page-heading h1 { margin:.15rem 0; font-size:clamp(1.65rem,3vw,2.35rem); font-weight:780; letter-spacing:-.035em; }
+.page-heading p,.login-heading p { color:var(--muted); margin:0; }
+.eyebrow { color:var(--brand); font-size:.76rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.count-badge { display:inline-grid; place-items:center; min-width:1.7rem; height:1.7rem; border-radius:99px; background:#ececff; color:var(--brand-dark); font-size:.75rem; }
+.btn-primary { background:var(--brand); border-color:var(--brand); }
+.btn-primary:hover { background:var(--brand-dark); border-color:var(--brand-dark); }
+.form-control:focus,.form-select:focus { border-color:#8585ed; box-shadow:0 0 0 .22rem rgba(91,91,214,.14); }
+.login-heading { text-align:center; margin-bottom:1.4rem; }
+.login-heading .brand-mark { margin-bottom:1rem; }
+.login-heading h1 { font-size:1.75rem; font-weight:760; letter-spacing:-.025em; }
 
 .card {
     border: 0;
@@ -15,8 +30,13 @@ body {
     display: flex;
     gap: 12px;
     align-items: end;
-    margin-bottom: 10px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 5px 18px rgba(27,39,71,.05);
 }
 
 .monat-navigation {
@@ -84,12 +104,14 @@ body {
 }
 
 .sidebar {
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
     height: fit-content;
+    box-shadow: 0 5px 18px rgba(27,39,71,.05);
 }
+.sidebar h3 { display:flex; justify-content:space-between; align-items:center; font-size:1rem; font-weight:750; margin-bottom:.9rem; }
 
 .feiertag-panel {
     margin-top: 16px;
@@ -117,7 +139,10 @@ body {
     margin-bottom: 7px;
     cursor: grab;
     user-select: none;
+    box-shadow: 0 2px 8px rgba(27,39,71,.05);
+    transition: transform .15s ease, box-shadow .15s ease;
 }
+.mitarbeiter-card:hover { transform:translateY(-1px); box-shadow:0 6px 15px rgba(27,39,71,.1); }
 
 .compact-card {
     padding: 6px 8px;
@@ -350,4 +375,14 @@ body {
     border-radius: 6px;
     padding: 4px 8px;
     cursor: pointer;
+}
+.kalender-tag:hover { border-color:#bfc7d8; box-shadow:0 4px 14px rgba(27,39,71,.06); }
+
+@media (max-width:1100px) {
+    .compact-layout,.layout { grid-template-columns:180px minmax(900px,1fr); }
+    .app-content { overflow-x:auto; }
+}
+@media (max-width:720px) {
+    .app-content { padding:1.25rem .8rem 2rem; }
+    .planung-toolbar { position:sticky; top:.5rem; z-index:20; }
 }

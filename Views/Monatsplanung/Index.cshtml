@@ -6,7 +6,13 @@
     var next = new DateTime(Model.Jahr, Model.Monat, 1).AddMonths(1);
 }
 
-<h2>Monatsplanung</h2>
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Dienstplanung</span>
+        <h1>@(new DateTime(Model.Jahr, Model.Monat, 1).ToString("MMMM yyyy", new System.Globalization.CultureInfo("de-DE")))</h1>
+        <p>Mitarbeitende per Drag &amp; Drop auf freie Schichten ziehen.</p>
+    </div>
+</div>
 
 <form id="filterForm" method="get" class="planung-toolbar">
     @Html.AntiForgeryToken()
@@ -41,7 +47,7 @@
 
 <div class="layout compact-layout">
     <div class="sidebar">
-        <h3>Mitarbeiter</h3>
+        <h3>Team <span class="count-badge">@Model.Mitarbeiter.Count</span></h3>
 
         @foreach (var m in Model.Mitarbeiter)
         {

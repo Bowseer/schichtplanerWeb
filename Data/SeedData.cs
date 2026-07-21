@@ -20,8 +20,13 @@ public static class SeedData
 
     public static async Task EnsureAdminAsync(UserManager<ApplicationUser> userManager, IConfiguration configuration)
     {
-        var email = configuration["SeedAdmin:Email"] ?? "admin@example.local";
-        var password = configuration["SeedAdmin:Password"] ?? "Admin1234";
+        var email = configuration["SeedAdmin:Email"];
+        var password = configuration["SeedAdmin:Password"];
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            throw new InvalidOperationException("SeedAdmin:Email und SeedAdmin:Password müssen konfiguriert sein.");
+        }
 
         var existingUser = await userManager.FindByEmailAsync(email);
         if (existingUser != null)

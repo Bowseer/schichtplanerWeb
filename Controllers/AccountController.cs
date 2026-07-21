@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Schichtplaner.Models;
 using Schichtplaner.Models.ViewModels;
 
@@ -26,6 +27,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [EnableRateLimiting("login")]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
