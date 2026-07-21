@@ -1,6 +1,7 @@
 services:
   schichtplaner-web:
     build: .
+    image: schichtplaner-web:2026.07.21
     container_name: schichtplaner-web
     restart: unless-stopped
     ports:
