@@ -7,9 +7,9 @@ services:
       - "8090:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=${POSTGRES_DB:-schichtplaner};Username=${POSTGRES_USER:-schichtplaner};Password=${POSTGRES_PASSWORD:-${DB_PASSWORD:?POSTGRES_PASSWORD oder DB_PASSWORD muss gesetzt sein}}
-      SeedAdmin__Email: ${SEED_ADMIN_EMAIL:-${ADMIN_EMAIL:?SEED_ADMIN_EMAIL oder ADMIN_EMAIL muss gesetzt sein}}
-      SeedAdmin__Password: ${SEED_ADMIN_PASSWORD:-${ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD oder ADMIN_PASSWORD muss gesetzt sein}}
+      ConnectionStrings__DefaultConnection: Host=schichtplaner-db;Port=5432;Database=${POSTGRES_DB:-schichtplaner};Username=${POSTGRES_USER:-schichtplaner};Password=${DB_PASSWORD:?DB_PASSWORD muss gesetzt sein}
+      SeedAdmin__Email: ${ADMIN_EMAIL:?ADMIN_EMAIL muss gesetzt sein}
+      SeedAdmin__Password: ${ADMIN_PASSWORD:?ADMIN_PASSWORD muss gesetzt sein}
       UseHttpsRedirection: "false"
       DataProtection__KeysPath: /app/keys
     volumes:
@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-schichtplaner}
       POSTGRES_USER: ${POSTGRES_USER:-schichtplaner}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:?POSTGRES_PASSWORD oder DB_PASSWORD muss gesetzt sein}}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss gesetzt sein}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
